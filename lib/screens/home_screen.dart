@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'favorites_screen.dart';
 import 'leagues_screen.dart';
 import 'live_screen.dart';
+import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -101,7 +102,7 @@ class HomeContent extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _searchBox(),
+          _searchBox(context),
           const SizedBox(height: 20),
           _sectionTitle('LIVE MATCHES', 'LIVE'),
           const SizedBox(height: 12),
@@ -121,26 +122,35 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _searchBox() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      height: 54,
-      decoration: BoxDecoration(
-        color: const Color(0xff161b22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.search, color: Colors.grey),
-          SizedBox(width: 10),
-          Text(
-            'Search teams, leagues, matches...',
-            style: TextStyle(color: Colors.grey),
-          ),
-          Spacer(),
-          Icon(Icons.tune_rounded, color: Colors.greenAccent),
-        ],
+  Widget _searchBox(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SearchScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        height: 54,
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.search, color: Colors.grey),
+            SizedBox(width: 10),
+            Text(
+              'Search teams, leagues, matches...',
+              style: TextStyle(color: Colors.grey),
+            ),
+            Spacer(),
+            Icon(Icons.tune_rounded, color: Colors.greenAccent),
+          ],
+        ),
       ),
     );
   }
