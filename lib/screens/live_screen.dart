@@ -1,10 +1,30 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class LiveScreen extends StatelessWidget {
+import '../models/fixture_model.dart';
+import '../providers/fixture_provider.dart';
+
+class LiveScreen extends StatefulWidget {
   const LiveScreen({super.key});
 
   @override
+  State<LiveScreen> createState() => _LiveScreenState();
+}
+
+class _LiveScreenState extends State<LiveScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      Provider.of<FixtureProvider>(context, listen: false).loadLiveFixtures();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<FixtureProvider>(context);
+
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
       appBar: AppBar(
@@ -12,43 +32,37 @@ class LiveScreen extends StatelessWidget {
           'Live Matches',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Icon(Icons.refresh_rounded),
+        actions: [
+          IconButton(
+            onPressed: provider.loadLiveFixtures,
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _liveHeader(),
-          const SizedBox(height: 20),
-          _liveMatchCard(
-            league: 'Premier League',
-            homeTeam: 'Liverpool',
-            awayTeam: 'Chelsea',
-            homeScore: 2,
-            awayScore: 1,
-            minute: '78',
-          ),
-          _liveMatchCard(
-            league: 'La Liga',
-            homeTeam: 'Barcelona',
-            awayTeam: 'Real Madrid',
-            homeScore: 1,
-            awayScore: 1,
-            minute: '64',
-          ),
-          _liveMatchCard(
-            league: 'Serie A',
-            homeTeam: 'Inter Milan',
-            awayTeam: 'Juventus',
-            homeScore: 0,
-            awayScore: 0,
-            minute: '52',
-          ),
-        ],
+      body: RefreshIndicator(
+        onRefresh: provider.loadLiveFixtures,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _liveHeader(),
+            const SizedBox(height: 20),
+            if (provider.isLoading)
+              const Padding(
+                padding: EdgeInsets.only(top: 80),
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.greenAccent),
+                ),
+              )
+            else if (provider.errorMessage != null)
+              _messageBox('خطا در دریافت مسابقات زنده')
+            else if (provider.liveFixtures.isEmpty)
+              _messageBox('در حال حاضر مسابقه زنده‌ای وجود ندارد')
+            else
+              ...provider.liveFixtures.map((fixture) {
+                return _liveFixtureCard(fixture);
+              }),
+          ],
+        ),
       ),
     );
   }
@@ -59,7 +73,7 @@ class LiveScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xff161b22),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.greenAccent.withOpacity(0.25)),
+        border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.25)),
       ),
       child: const Row(
         children: [
@@ -71,10 +85,7 @@ class LiveScreen extends StatelessWidget {
           Expanded(
             child: Text(
               'Live football matches are updated in real time.',
-              style: TextStyle(
-                color: Colors.white70,
-                height: 1.4,
-              ),
+              style: TextStyle(color: Colors.white70, height: 1.4),
             ),
           ),
         ],
@@ -82,14 +93,27 @@ class LiveScreen extends StatelessWidget {
     );
   }
 
-  Widget _liveMatchCard({
-    required String league,
-    required String homeTeam,
-    required String awayTeam,
-    required int homeScore,
-    required int awayScore,
-    required String minute,
-  }) {
+  Widget _messageBox(String text) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.grey),
+        ),
+      ),
+    );
+  }
+
+  Widget _liveFixtureCard(FixtureModel fixture) {
+    final homeScore = fixture.homeScore?.toString() ?? '-';
+    final awayScore = fixture.awayScore?.toString() ?? '-';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
@@ -102,11 +126,12 @@ class LiveScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                league,
-                style: const TextStyle(color: Colors.grey),
+              Expanded(
+                child: Text(
+                  fixture.leagueName,
+                  style: const TextStyle(color: Colors.grey),
+                ),
               ),
-              const Spacer(),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -115,7 +140,9 @@ class LiveScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  "$minute’ LIVE",
+                  fixture.status == '1H' || fixture.status == '2H'
+                      ? 'LIVE'
+                      : fixture.status,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -128,7 +155,7 @@ class LiveScreen extends StatelessWidget {
           const SizedBox(height: 18),
           Row(
             children: [
-              Expanded(child: _teamInfo(homeTeam)),
+              Expanded(child: _teamInfo(fixture.homeTeam, fixture.homeLogo)),
               Text(
                 '$homeScore - $awayScore',
                 style: const TextStyle(
@@ -137,18 +164,7 @@ class LiveScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Expanded(child: _teamInfo(awayTeam)),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Divider(color: Colors.white10),
-          const SizedBox(height: 8),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _StatItem(title: 'Shots', value: '8 - 5'),
-              _StatItem(title: 'Possession', value: '56% - 44%'),
-              _StatItem(title: 'Corners', value: '4 - 2'),
+              Expanded(child: _teamInfo(fixture.awayTeam, fixture.awayLogo)),
             ],
           ),
         ],
@@ -156,52 +172,25 @@ class LiveScreen extends StatelessWidget {
     );
   }
 
-  Widget _teamInfo(String name) {
+  Widget _teamInfo(String name, String logo) {
     return Column(
       children: [
-        const CircleAvatar(
-          radius: 24,
-          backgroundColor: Colors.greenAccent,
-          child: Icon(Icons.shield_rounded, color: Colors.black),
+        CachedNetworkImage(
+          imageUrl: logo,
+          width: 44,
+          height: 44,
+          placeholder: (_, __) =>
+              const CircularProgressIndicator(strokeWidth: 2),
+          errorWidget: (_, __, ___) => const Icon(
+            Icons.shield_rounded,
+            color: Colors.greenAccent,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           name,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String title;
-  final String value;
-
-  const _StatItem({
-    required this.title,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.greenAccent,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: Colors.white, fontSize: 12),
         ),
       ],
     );

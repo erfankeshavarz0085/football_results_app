@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'standings_screen.dart';
+
+import 'league_details_screen.dart';
 
 class LeaguesScreen extends StatelessWidget {
   const LeaguesScreen({super.key});
@@ -7,19 +8,20 @@ class LeaguesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final leagues = [
-      {'name': 'Premier League', 'country': 'England', 'id': 39},
-      {'name': 'La Liga', 'country': 'Spain', 'id': 140},
-      {'name': 'Serie A', 'country': 'Italy', 'id': 135},
-      {'name': 'Bundesliga', 'country': 'Germany', 'id': 78},
-      {'name': 'Ligue 1', 'country': 'France', 'id': 61},
-      {'name': 'Champions League', 'country': 'Europe', 'id': 2},
+      {'id': 39, 'name': 'Premier League', 'country': 'England'},
+      {'id': 140, 'name': 'La Liga', 'country': 'Spain'},
+      {'id': 135, 'name': 'Serie A', 'country': 'Italy'},
+      {'id': 78, 'name': 'Bundesliga', 'country': 'Germany'},
+      {'id': 61, 'name': 'Ligue 1', 'country': 'France'},
+      {'id': 2, 'name': 'Champions League', 'country': 'Europe'},
+      {'id': 1, 'name': 'World Cup 2026', 'country': 'International'},
     ];
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
       appBar: AppBar(
         title: const Text(
-          'Top Leagues',
+          'Leagues',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -30,14 +32,13 @@ class LeaguesScreen extends StatelessWidget {
           final league = leagues[index];
 
           return Container(
-            margin: const EdgeInsets.only(bottom: 14),
+            margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
               color: const Color(0xff161b22),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white10),
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.all(14),
               leading: const CircleAvatar(
                 backgroundColor: Colors.greenAccent,
                 child: Icon(Icons.emoji_events, color: Colors.black),
@@ -56,15 +57,15 @@ class LeaguesScreen extends StatelessWidget {
               trailing: const Icon(
                 Icons.arrow_forward_ios_rounded,
                 color: Colors.greenAccent,
-                size: 18,
+                size: 16,
               ),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => StandingsScreen(
-                      leagueName: league['name'].toString(),
+                    builder: (_) => LeagueDetailsScreen(
                       leagueId: league['id'] as int,
+                      leagueName: league['name'].toString(),
                     ),
                   ),
                 );

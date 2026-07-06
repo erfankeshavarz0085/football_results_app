@@ -1,5 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../models/fixture_model.dart';
+import '../providers/fixture_provider.dart';
 import 'favorites_screen.dart';
 import 'leagues_screen.dart';
 import 'live_screen.dart';
@@ -23,9 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   void _changePage(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
 
   @override
@@ -40,84 +42,85 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedItemColor: Colors.greenAccent,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sports_soccer),
-            label: 'Live',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events_rounded),
-            label: 'Leagues',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_rounded),
-            label: 'Favorites',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.sports_soccer), label: 'Live'),
+          BottomNavigationBarItem(icon: Icon(Icons.emoji_events_rounded), label: 'Leagues'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite_rounded), label: 'Favorites'),
         ],
       ),
     );
   }
 }
 
-class HomeContent extends StatelessWidget {
+class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
 
   @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      Provider.of<FixtureProvider>(context, listen: false).loadTodayFixtures();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<FixtureProvider>(context);
+
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
       appBar: AppBar(
-        title: RichText(
-          text: const TextSpan(
-            children: [
-              TextSpan(
-                text: 'Football ',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextSpan(
-                text: 'Results',
-                style: TextStyle(
-                  color: Colors.greenAccent,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+        title: const Text(
+          'Football Results',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Icon(Icons.notifications_none_rounded),
-          ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              provider.loadTodayFixtures();
+            },
+            icon: const Icon(Icons.refresh_rounded),
+          )
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _searchBox(context),
-          const SizedBox(height: 20),
-          _sectionTitle('LIVE MATCHES', 'LIVE'),
-          const SizedBox(height: 12),
-          _liveMatchCard(),
-          const SizedBox(height: 24),
-          _sectionTitle("TODAY'S MATCHES", 'See all'),
-          const SizedBox(height: 12),
-          _matchRow('Arsenal', '19:30', 'Tottenham'),
-          _matchRow('Barcelona', '22:00', 'Real Madrid'),
-          _matchRow('Man City', '00:30', 'Man United'),
-          const SizedBox(height: 24),
-          _sectionTitle('TOP LEAGUES', 'See all'),
-          const SizedBox(height: 12),
-          _leagueList(),
-        ],
+      body: RefreshIndicator(
+        onRefresh: provider.loadTodayFixtures,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _searchBox(context),
+            const SizedBox(height: 20),
+            const Text(
+              "TODAY'S MATCHES",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            if (provider.isLoading)
+              const Padding(
+                padding: EdgeInsets.only(top: 80),
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.greenAccent),
+                ),
+              )
+            else if (provider.errorMessage != null)
+              _messageBox('خطا در دریافت اطلاعات')
+            else if (provider.todayFixtures.isEmpty)
+              _messageBox('مسابقه‌ای برای امروز پیدا نشد')
+            else
+              ...provider.todayFixtures.map((fixture) {
+                return _fixtureCard(fixture);
+              }),
+          ],
+        ),
       ),
     );
   }
@@ -155,184 +158,92 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _sectionTitle(String title, String action) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          action,
-          style: const TextStyle(
-            color: Colors.greenAccent,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _liveMatchCard() {
+  Widget _messageBox(String text) {
     return Container(
-      height: 170,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xff132015),
-            Color(0xff111827),
-          ],
-        ),
-        border: Border.all(color: Colors.greenAccent.withOpacity(0.25)),
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
       ),
-      child: Column(
-        children: [
-          const Text(
-            'Premier League',
-            style: TextStyle(color: Colors.grey),
-          ),
-          const Spacer(),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _TeamName(name: 'Liverpool'),
-              Text(
-                '2 - 1',
-                style: TextStyle(
-                  fontSize: 42,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              _TeamName(name: 'Chelsea'),
-            ],
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.redAccent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              '78’ LIVE',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          )
-        ],
+      child: Center(
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.grey),
+        ),
       ),
     );
   }
 
-  Widget _matchRow(String home, String time, String away) {
+  Widget _fixtureCard(FixtureModel fixture) {
+    final homeScore = fixture.homeScore?.toString() ?? '-';
+    final awayScore = fixture.awayScore?.toString() ?? '-';
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xff161b22),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white10),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Text(
-              home,
-              style: const TextStyle(color: Colors.white),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  fixture.leagueName,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ),
+              Text(
+                fixture.status,
+                style: const TextStyle(
+                  color: Colors.greenAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          Text(
-            time,
-            style: const TextStyle(
-              color: Colors.greenAccent,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              away,
-              textAlign: TextAlign.end,
-              style: const TextStyle(color: Colors.white),
-            ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(child: _team(fixture.homeTeam, fixture.homeLogo)),
+              Text(
+                '$homeScore - $awayScore',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Expanded(child: _team(fixture.awayTeam, fixture.awayLogo)),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _leagueList() {
-    final leagues = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga'];
-
-    return SizedBox(
-      height: 105,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: leagues.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          return Container(
-            width: 110,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xff161b22),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.emoji_events_rounded,
-                  color: Colors.greenAccent,
-                  size: 30,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  leagues[index],
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                )
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _TeamName extends StatelessWidget {
-  final String name;
-
-  const _TeamName({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _team(String name, String logo) {
     return Column(
       children: [
-        const CircleAvatar(
-          radius: 24,
-          backgroundColor: Colors.greenAccent,
-          child: Icon(Icons.sports_soccer, color: Colors.black),
+        CachedNetworkImage(
+          imageUrl: logo,
+          width: 42,
+          height: 42,
+          placeholder: (_, __) => const CircularProgressIndicator(strokeWidth: 2),
+          errorWidget: (_, __, ___) => const Icon(
+            Icons.shield_rounded,
+            color: Colors.greenAccent,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           name,
-          style: const TextStyle(color: Colors.white),
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white, fontSize: 12),
         ),
       ],
     );
