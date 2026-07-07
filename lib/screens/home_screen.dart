@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/fixture_model.dart';
@@ -21,8 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = const [
     HomeContent(),
-    LiveScreen(),
     LeaguesScreen(),
+    LiveScreen(),
+    SearchScreen(),
     FavoritesScreen(),
   ];
 
@@ -47,12 +49,16 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.emoji_events_rounded),
+            label: 'Leagues',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.sports_soccer),
             label: 'Live',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events_rounded),
-            label: 'Leagues',
+            icon: Icon(Icons.search_rounded),
+            label: 'Search',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_rounded),
@@ -72,6 +78,8 @@ class HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<HomeContent> {
+  String searchQuery = '';
+
   final List<String> importantLeagues = const [
     'Premier League',
     'La Liga',
@@ -96,52 +104,74 @@ class _HomeContentState extends State<HomeContent> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<FixtureProvider>(context);
+    final filteredFixtures = _filterFixtures(provider.todayFixtures);
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
-      appBar: AppBar(
-        title: const Text(
-          'Football Results',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            onPressed: provider.loadTodayFixtures,
-            icon: const Icon(Icons.refresh_rounded),
+      body: SafeArea(
+        child: RefreshIndicator(
+          color: Colors.greenAccent,
+          onRefresh: provider.loadTodayFixtures,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _topHeader(
+                matchCount: provider.todayFixtures.length,
+                onRefresh: provider.loadTodayFixtures,
+              ),
+              const SizedBox(height: 16),
+              _todaySearchBox(),
+              const SizedBox(height: 22),
+              _sectionHeader(
+                title: 'Today Matches',
+                subtitle: searchQuery.isEmpty
+                    ? 'Grouped by league'
+                    : 'Search results',
+              ),
+              const SizedBox(height: 12),
+              if (provider.isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(top: 80),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Colors.greenAccent),
+                  ),
+                )
+              else if (provider.errorMessage != null)
+                _messageBox('خطا در دریافت اطلاعات')
+              else if (provider.todayFixtures.isEmpty)
+                _messageBox('مسابقه‌ای برای امروز پیدا نشد')
+              else if (filteredFixtures.isEmpty)
+                _messageBox('نتیجه‌ای برای جستجوی شما پیدا نشد')
+              else
+                ..._buildLeagueCards(filteredFixtures),
+            ],
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        color: Colors.greenAccent,
-        onRefresh: provider.loadTodayFixtures,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _header(provider.todayFixtures.length),
-            const SizedBox(height: 16),
-            _searchBox(context),
-            const SizedBox(height: 20),
-
-            if (provider.isLoading)
-              const Padding(
-                padding: EdgeInsets.only(top: 80),
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.greenAccent),
-                ),
-              )
-            else if (provider.errorMessage != null)
-              _messageBox('خطا در دریافت اطلاعات')
-            else if (provider.todayFixtures.isEmpty)
-              _messageBox('مسابقه‌ای برای امروز پیدا نشد')
-            else
-              ..._buildGroupedMatches(provider.todayFixtures),
-          ],
         ),
       ),
     );
   }
 
-  Widget _header(int matchCount) {
+  List<FixtureModel> _filterFixtures(List<FixtureModel> fixtures) {
+    if (searchQuery.trim().isEmpty) {
+      return fixtures;
+    }
+
+    final query = searchQuery.toLowerCase().trim();
+
+    return fixtures.where((fixture) {
+      return fixture.homeTeam.toLowerCase().contains(query) ||
+          fixture.awayTeam.toLowerCase().contains(query) ||
+          fixture.leagueName.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  Widget _topHeader({
+    required int matchCount,
+    required VoidCallback onRefresh,
+  }) {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('EEEE • d MMMM').format(now);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -151,15 +181,15 @@ class _HomeContentState extends State<HomeContent> {
             Color(0xff111827),
           ],
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
           const CircleAvatar(
-            radius: 26,
+            radius: 28,
             backgroundColor: Colors.greenAccent,
-            child: Icon(Icons.sports_soccer, color: Colors.black, size: 30),
+            child: Icon(Icons.sports_soccer, color: Colors.black, size: 32),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -167,60 +197,87 @@ class _HomeContentState extends State<HomeContent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Today's Matches",
+                  'Shoot Ball',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 25,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 Text(
-                  '$matchCount matches available today',
-                  style: const TextStyle(color: Colors.white70),
+                  '$formattedDate • $matchCount matches',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: onRefresh,
+            icon: const Icon(Icons.refresh_rounded, color: Colors.greenAccent),
           ),
         ],
       ),
     );
   }
 
-  Widget _searchBox(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SearchScreen()),
-        );
+  Widget _todaySearchBox() {
+    return TextField(
+      onChanged: (value) {
+        setState(() {
+          searchQuery = value;
+        });
       },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        height: 54,
-        decoration: BoxDecoration(
-          color: const Color(0xff161b22),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.search, color: Colors.grey),
-            SizedBox(width: 10),
-            Text(
-              'Search teams, leagues, matches...',
-              style: TextStyle(color: Colors.grey),
-            ),
-            Spacer(),
-            Icon(Icons.tune_rounded, color: Colors.greenAccent),
-          ],
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: 'Search today matches...',
+        hintStyle: const TextStyle(color: Colors.grey),
+        prefixIcon: const Icon(Icons.search_rounded, color: Colors.greenAccent),
+        suffixIcon: searchQuery.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                onPressed: () {
+                  setState(() {
+                    searchQuery = '';
+                  });
+                },
+              )
+            : null,
+        filled: true,
+        fillColor: const Color(0xff161b22),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
         ),
       ),
     );
   }
 
-  List<Widget> _buildGroupedMatches(List<FixtureModel> fixtures) {
+  Widget _sectionHeader({
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Text(
+          subtitle,
+          style: const TextStyle(color: Colors.grey, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildLeagueCards(List<FixtureModel> fixtures) {
     final Map<String, List<FixtureModel>> grouped = {};
 
     for (final fixture in fixtures) {
@@ -236,46 +293,67 @@ class _HomeContentState extends State<HomeContent> {
       grouped[key]!.add(fixture);
     }
 
-    final orderedKeys = grouped.keys.toList();
+    final keys = grouped.keys.toList();
 
-    orderedKeys.sort((a, b) {
+    keys.sort((a, b) {
       if (a == 'Other Matches') return 1;
       if (b == 'Other Matches') return -1;
       return a.compareTo(b);
     });
 
-    return orderedKeys.map((leagueName) {
+    return keys.map((leagueName) {
       final matches = grouped[leagueName] ?? [];
+      final visibleMatches = matches.take(4).toList();
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _leagueTitle(leagueName, matches.length),
-          const SizedBox(height: 10),
-          ...matches.map((match) => _fixtureCard(match)),
-          const SizedBox(height: 18),
-        ],
+      return Container(
+        margin: const EdgeInsets.only(bottom: 18),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _leagueCardHeader(leagueName, matches.length),
+            const SizedBox(height: 12),
+            ...visibleMatches.map((match) => _compactMatchRow(match)),
+            if (matches.length > 4) ...[
+              const SizedBox(height: 10),
+              Center(
+                child: Text(
+                  'Showing first 4 matches',
+                  style: TextStyle(
+                    color: Colors.greenAccent.shade100,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       );
     }).toList();
   }
 
-  Widget _leagueTitle(String title, int count) {
+  Widget _leagueCardHeader(String leagueName, int count) {
     return Row(
       children: [
         Icon(
-          title == 'Other Matches'
+          leagueName == 'Other Matches'
               ? Icons.public_rounded
               : Icons.emoji_events_rounded,
           color: Colors.greenAccent,
-          size: 20,
+          size: 22,
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            title,
+            leagueName,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 17,
+              fontSize: 16.5,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -283,6 +361,100 @@ class _HomeContentState extends State<HomeContent> {
         Text(
           '$count matches',
           style: const TextStyle(color: Colors.grey, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _compactMatchRow(FixtureModel fixture) {
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xff0d1117),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Column(
+              children: [
+                Text(
+                  _scoreOrTime(fixture),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatStatus(fixture.status),
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+        ],
+      ),
+    );
+  }
+
+  String _scoreOrTime(FixtureModel fixture) {
+    if (fixture.status == 'NS') {
+      return _formatMatchTime(fixture.date);
+    }
+
+    final homeScore = fixture.homeScore?.toString() ?? '-';
+    final awayScore = fixture.awayScore?.toString() ?? '-';
+    return '$homeScore - $awayScore';
+  }
+
+  String _formatMatchTime(String date) {
+    try {
+      final parsedDate = DateTime.parse(date).toLocal();
+      return DateFormat('HH:mm').format(parsedDate);
+    } catch (_) {
+      return '-';
+    }
+  }
+
+  Widget _teamMini(String name, String logo) {
+    return Column(
+      children: [
+        if (logo.isNotEmpty)
+          CachedNetworkImage(
+            imageUrl: logo,
+            width: 34,
+            height: 34,
+            errorWidget: (_, __, ___) => const Icon(
+              Icons.shield_rounded,
+              color: Colors.greenAccent,
+              size: 28,
+            ),
+          )
+        else
+          const Icon(
+            Icons.shield_rounded,
+            color: Colors.greenAccent,
+            size: 28,
+          ),
+        const SizedBox(height: 6),
+        Text(
+          name,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.white, fontSize: 11),
         ),
       ],
     );
@@ -297,99 +469,24 @@ class _HomeContentState extends State<HomeContent> {
         border: Border.all(color: Colors.white10),
       ),
       child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(color: Colors.grey),
-        ),
+        child: Text(text, style: const TextStyle(color: Colors.grey)),
       ),
     );
   }
 
-  Widget _fixtureCard(FixtureModel fixture) {
-    final homeScore = fixture.homeScore?.toString() ?? '-';
-    final awayScore = fixture.awayScore?.toString() ?? '-';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xff161b22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  fixture.status,
-                  style: const TextStyle(
-                    color: Colors.greenAccent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white24,
-                size: 14,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(child: _team(fixture.homeTeam, fixture.homeLogo)),
-              Text(
-                '$homeScore - $awayScore',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Expanded(child: _team(fixture.awayTeam, fixture.awayLogo)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _team(String name, String logo) {
-    return Column(
-      children: [
-        if (logo.isNotEmpty)
-          CachedNetworkImage(
-            imageUrl: logo,
-            width: 40,
-            height: 40,
-            placeholder: (_, __) => const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            errorWidget: (_, __, ___) => const CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.greenAccent,
-              child: Icon(Icons.shield_rounded, color: Colors.black),
-            ),
-          )
-        else
-          const CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.greenAccent,
-            child: Icon(Icons.shield_rounded, color: Colors.black),
-          ),
-        const SizedBox(height: 8),
-        Text(
-          name,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
-        ),
-      ],
-    );
+  String _formatStatus(String status) {
+    switch (status) {
+      case 'NS':
+        return 'Not Started';
+      case 'FT':
+        return 'Full Time';
+      case 'HT':
+        return 'Half Time';
+      case '1H':
+      case '2H':
+        return 'Live';
+      default:
+        return status;
+    }
   }
 }
