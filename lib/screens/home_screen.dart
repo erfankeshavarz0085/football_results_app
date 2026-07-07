@@ -10,6 +10,7 @@ import 'league_details/league_details_screen.dart';
 import 'leagues_screen.dart';
 import 'live_screen.dart';
 import 'search_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -65,15 +66,7 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   String searchQuery = '';
 
-  final List<int> importantLeagueIds = const [
-    39,
-    140,
-    135,
-    78,
-    61,
-    2,
-    1,
-  ];
+  final List<int> importantLeagueIds = const [39, 140, 135, 78, 61, 2, 1];
 
   @override
   void initState() {
@@ -156,10 +149,7 @@ class _HomeContentState extends State<HomeContent> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xff132015),
-            Color(0xff111827),
-          ],
+          colors: [Color(0xff132015), Color(0xff111827)],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.25)),
@@ -204,9 +194,7 @@ class _HomeContentState extends State<HomeContent> {
   Widget _todaySearchBox() {
     return TextField(
       onChanged: (value) {
-        setState(() {
-          searchQuery = value;
-        });
+        setState(() => searchQuery = value);
       },
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
@@ -217,9 +205,7 @@ class _HomeContentState extends State<HomeContent> {
             ? IconButton(
                 icon: const Icon(Icons.close_rounded, color: Colors.grey),
                 onPressed: () {
-                  setState(() {
-                    searchQuery = '';
-                  });
+                  setState(() => searchQuery = '');
                 },
               )
             : null,
@@ -311,7 +297,9 @@ class _HomeContentState extends State<HomeContent> {
             isOther: false,
           ),
           const SizedBox(height: 12),
-          ...visibleMatches.map((match) => _compactMatchRow(match)),
+          ...visibleMatches.map(
+            (match) => _compactMatchRow(match, showCompetitionInfo: false),
+          ),
           if (matches.length > 4) ...[
             const SizedBox(height: 8),
             _showAllButton(
@@ -346,7 +334,9 @@ class _HomeContentState extends State<HomeContent> {
             isOther: true,
           ),
           const SizedBox(height: 12),
-          ...visibleMatches.map((match) => _compactMatchRow(match)),
+          ...visibleMatches.map(
+            (match) => _compactMatchRow(match, showCompetitionInfo: true),
+          ),
           if (matches.length > 6) ...[
             const SizedBox(height: 8),
             Center(
@@ -386,8 +376,8 @@ class _HomeContentState extends State<HomeContent> {
               ? CachedNetworkImage(
                   imageUrl: logo,
                   fit: BoxFit.contain,
-                  errorWidget: (_, __, ___) => Icon(
-                    isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
+                  errorWidget: (_, __, ___) => const Icon(
+                    Icons.emoji_events_rounded,
                     color: Colors.greenAccent,
                   ),
                 )
@@ -412,10 +402,7 @@ class _HomeContentState extends State<HomeContent> {
               const SizedBox(height: 3),
               Text(
                 country,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
           ),
@@ -466,7 +453,10 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  Widget _compactMatchRow(FixtureModel fixture) {
+  Widget _compactMatchRow(
+    FixtureModel fixture, {
+    required bool showCompetitionInfo,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -477,6 +467,31 @@ class _HomeContentState extends State<HomeContent> {
       ),
       child: Column(
         children: [
+          if (showCompetitionInfo) ...[
+            Row(
+              children: [
+                const Icon(
+                  Icons.emoji_events_rounded,
+                  color: Colors.greenAccent,
+                  size: 15,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${_displayCountry(fixture)} • ${fixture.leagueName}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
           Row(
             children: [
               Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
@@ -512,10 +527,7 @@ class _HomeContentState extends State<HomeContent> {
             Text(
               _cleanRound(fixture.round),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 11,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 11),
             ),
           ],
         ],
