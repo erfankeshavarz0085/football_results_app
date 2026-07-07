@@ -80,16 +80,14 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   String searchQuery = '';
 
-  final List<String> importantLeagues = const [
-    'Premier League',
-    'La Liga',
-    'Serie A',
-    'Bundesliga',
-    'Ligue 1',
-    'UEFA Champions League',
-    'Champions League',
-    'World Cup',
-    'FIFA World Cup',
+  final List<int> importantLeagueIds = const [
+    39, // Premier League - England
+    140, // La Liga
+    135, // Serie A
+    78, // Bundesliga
+    61, // Ligue 1
+    2, // Champions League
+    1, // World Cup
   ];
 
   @override
@@ -152,16 +150,15 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   List<FixtureModel> _filterFixtures(List<FixtureModel> fixtures) {
-    if (searchQuery.trim().isEmpty) {
-      return fixtures;
-    }
+    if (searchQuery.trim().isEmpty) return fixtures;
 
     final query = searchQuery.toLowerCase().trim();
 
     return fixtures.where((fixture) {
       return fixture.homeTeam.toLowerCase().contains(query) ||
           fixture.awayTeam.toLowerCase().contains(query) ||
-          fixture.leagueName.toLowerCase().contains(query);
+          fixture.leagueName.toLowerCase().contains(query) ||
+          fixture.country.toLowerCase().contains(query);
     }).toList();
   }
 
@@ -278,84 +275,164 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   List<Widget> _buildLeagueCards(List<FixtureModel> fixtures) {
-    final Map<String, List<FixtureModel>> grouped = {};
+    final Map<int, List<FixtureModel>> importantGroups = {};
+    final List<FixtureModel> otherMatches = [];
 
     for (final fixture in fixtures) {
-      final leagueName = fixture.leagueName.trim();
-
-      final isImportant = importantLeagues.any(
-        (league) => leagueName.toLowerCase().contains(league.toLowerCase()),
-      );
-
-      final key = isImportant ? leagueName : 'Other Matches';
-
-      grouped.putIfAbsent(key, () => []);
-      grouped[key]!.add(fixture);
+      if (importantLeagueIds.contains(fixture.leagueId)) {
+        importantGroups.putIfAbsent(fixture.leagueId, () => []);
+        importantGroups[fixture.leagueId]!.add(fixture);
+      } else {
+        otherMatches.add(fixture);
+      }
     }
 
-    final keys = grouped.keys.toList();
+    final widgets = <Widget>[];
 
-    keys.sort((a, b) {
-      if (a == 'Other Matches') return 1;
-      if (b == 'Other Matches') return -1;
-      return a.compareTo(b);
-    });
+    final orderedImportantIds = importantLeagueIds
+        .where((id) => importantGroups.containsKey(id))
+        .toList();
 
-    return keys.map((leagueName) {
-      final matches = grouped[leagueName] ?? [];
-      final visibleMatches = matches.take(4).toList();
+    for (final leagueId in orderedImportantIds) {
+      final matches = importantGroups[leagueId] ?? [];
+      if (matches.isEmpty) continue;
+      widgets.add(_leagueCard(matches.first, matches));
+    }
 
-      return Container(
-        margin: const EdgeInsets.only(bottom: 18),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xff161b22),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _leagueCardHeader(leagueName, matches.length),
-            const SizedBox(height: 12),
-            ...visibleMatches.map((match) => _compactMatchRow(match)),
-            if (matches.length > 4) ...[
-              const SizedBox(height: 10),
-              Center(
-                child: Text(
-                  'Showing first 4 matches',
-                  style: TextStyle(
-                    color: Colors.greenAccent.shade100,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      );
-    }).toList();
+    if (otherMatches.isNotEmpty) {
+      widgets.add(_otherMatchesCard(otherMatches));
+    }
+
+    return widgets;
   }
 
-  Widget _leagueCardHeader(String leagueName, int count) {
+  Widget _leagueCard(FixtureModel firstMatch, List<FixtureModel> matches) {
+    final visibleMatches = matches.take(4).toList();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _leagueCardHeader(
+            leagueName: firstMatch.leagueName,
+            country: firstMatch.country,
+            logo: firstMatch.leagueLogo,
+            count: matches.length,
+            isOther: false,
+          ),
+          const SizedBox(height: 12),
+          ...visibleMatches.map((match) => _compactMatchRow(match)),
+          if (matches.length > 4) ...[
+            const SizedBox(height: 10),
+            Center(
+              child: Text(
+                'Showing first 4 matches',
+                style: TextStyle(
+                  color: Colors.greenAccent.shade100,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _otherMatchesCard(List<FixtureModel> matches) {
+    final visibleMatches = matches.take(6).toList();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _leagueCardHeader(
+            leagueName: 'Other Matches',
+            country: 'Various competitions',
+            logo: '',
+            count: matches.length,
+            isOther: true,
+          ),
+          const SizedBox(height: 12),
+          ...visibleMatches.map((match) => _compactMatchRow(match)),
+          if (matches.length > 6) ...[
+            const SizedBox(height: 10),
+            Center(
+              child: Text(
+                'Showing first 6 matches',
+                style: TextStyle(
+                  color: Colors.greenAccent.shade100,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _leagueCardHeader({
+    required String leagueName,
+    required String country,
+    required String logo,
+    required int count,
+    required bool isOther,
+  }) {
     return Row(
       children: [
-        Icon(
-          leagueName == 'Other Matches'
-              ? Icons.public_rounded
-              : Icons.emoji_events_rounded,
-          color: Colors.greenAccent,
-          size: 22,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            leagueName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16.5,
-              fontWeight: FontWeight.bold,
+        if (logo.isNotEmpty && !isOther)
+          CachedNetworkImage(
+            imageUrl: logo,
+            width: 28,
+            height: 28,
+            errorWidget: (_, __, ___) => const Icon(
+              Icons.emoji_events_rounded,
+              color: Colors.greenAccent,
             ),
+          )
+        else
+          Icon(
+            isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
+            color: Colors.greenAccent,
+            size: 25,
+          ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                leagueName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (country.isNotEmpty)
+                Text(
+                  country,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+            ],
           ),
         ),
         Text(
@@ -367,7 +444,6 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Widget _compactMatchRow(FixtureModel fixture) {
-    
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
