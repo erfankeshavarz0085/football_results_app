@@ -14,13 +14,13 @@ class LiveScreen extends StatefulWidget {
 
 class _LiveScreenState extends State<LiveScreen> {
   final List<int> importantLeagueIds = const [
-    39, // Premier League
-    140, // La Liga
-    135, // Serie A
-    78, // Bundesliga
-    61, // Ligue 1
-    2, // Champions League
-    1, // World Cup
+    39,
+    140,
+    135,
+    78,
+    61,
+    2,
+    1,
   ];
 
   @override
@@ -198,7 +198,9 @@ class _LiveScreenState extends State<LiveScreen> {
             isOther: false,
           ),
           const SizedBox(height: 12),
-          ...matches.map((match) => _liveMatchRow(match)),
+          ...matches.map(
+            (match) => _liveMatchRow(match, showCompetitionInfo: false),
+          ),
         ],
       ),
     );
@@ -224,7 +226,9 @@ class _LiveScreenState extends State<LiveScreen> {
             isOther: true,
           ),
           const SizedBox(height: 12),
-          ...matches.map((match) => _liveMatchRow(match)),
+          ...matches.map(
+            (match) => _liveMatchRow(match, showCompetitionInfo: true),
+          ),
         ],
       ),
     );
@@ -291,7 +295,10 @@ class _LiveScreenState extends State<LiveScreen> {
     );
   }
 
-  Widget _liveMatchRow(FixtureModel fixture) {
+  Widget _liveMatchRow(
+    FixtureModel fixture, {
+    required bool showCompetitionInfo,
+  }) {
     final homeScore = fixture.homeScore?.toString() ?? '-';
     final awayScore = fixture.awayScore?.toString() ?? '-';
 
@@ -305,6 +312,31 @@ class _LiveScreenState extends State<LiveScreen> {
       ),
       child: Column(
         children: [
+          if (showCompetitionInfo) ...[
+            Row(
+              children: [
+                const Icon(
+                  Icons.emoji_events_rounded,
+                  color: Colors.greenAccent,
+                  size: 15,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${_displayCountry(fixture)} • ${fixture.leagueName}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
           Row(
             children: [
               Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
