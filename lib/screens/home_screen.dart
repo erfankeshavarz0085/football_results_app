@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/fixture_model.dart';
 import '../providers/fixture_provider.dart';
 import 'favorites_screen.dart';
+import 'league_details_screen.dart';
 import 'leagues_screen.dart';
 import 'live_screen.dart';
 import 'search_screen.dart';
@@ -44,26 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedItemColor: Colors.greenAccent,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events_rounded),
-            label: 'Leagues',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sports_soccer),
-            label: 'Live',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_rounded),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_rounded),
-            label: 'Favorites',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.emoji_events_rounded), label: 'Leagues'),
+          BottomNavigationBarItem(icon: Icon(Icons.sports_soccer), label: 'Live'),
+          BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Search'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite_rounded), label: 'Favorites'),
         ],
       ),
     );
@@ -81,13 +67,13 @@ class _HomeContentState extends State<HomeContent> {
   String searchQuery = '';
 
   final List<int> importantLeagueIds = const [
-    39, // Premier League - England
-    140, // La Liga
-    135, // Serie A
-    78, // Bundesliga
-    61, // Ligue 1
-    2, // Champions League
-    1, // World Cup
+    39,
+    140,
+    135,
+    78,
+    61,
+    2,
+    1,
   ];
 
   @override
@@ -121,10 +107,8 @@ class _HomeContentState extends State<HomeContent> {
               _todaySearchBox(),
               const SizedBox(height: 22),
               _sectionHeader(
-                title: 'Today Matches',
-                subtitle: searchQuery.isEmpty
-                    ? 'Grouped by league'
-                    : 'Search results',
+                title: "Today's Fixtures",
+                subtitle: searchQuery.isEmpty ? 'Grouped by league' : 'Search results',
               ),
               const SizedBox(height: 12),
               if (provider.isLoading)
@@ -203,7 +187,7 @@ class _HomeContentState extends State<HomeContent> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '$formattedDate • $matchCount matches',
+                  '$formattedDate • $matchCount fixtures',
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
@@ -227,7 +211,7 @@ class _HomeContentState extends State<HomeContent> {
       },
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        hintText: 'Search today matches...',
+        hintText: 'Search today fixtures...',
         hintStyle: const TextStyle(color: Colors.grey),
         prefixIcon: const Icon(Icons.search_rounded, color: Colors.greenAccent),
         suffixIcon: searchQuery.isNotEmpty
@@ -322,7 +306,7 @@ class _HomeContentState extends State<HomeContent> {
         children: [
           _leagueCardHeader(
             leagueName: firstMatch.leagueName,
-            country: firstMatch.country,
+            country: _displayCountry(firstMatch),
             logo: firstMatch.leagueLogo,
             count: matches.length,
             isOther: false,
@@ -330,15 +314,10 @@ class _HomeContentState extends State<HomeContent> {
           const SizedBox(height: 12),
           ...visibleMatches.map((match) => _compactMatchRow(match)),
           if (matches.length > 4) ...[
-            const SizedBox(height: 10),
-            Center(
-              child: Text(
-                'Showing first 4 matches',
-                style: TextStyle(
-                  color: Colors.greenAccent.shade100,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            const SizedBox(height: 8),
+            _showAllButton(
+              leagueId: firstMatch.leagueId,
+              leagueName: firstMatch.leagueName,
             ),
           ],
         ],
@@ -370,12 +349,12 @@ class _HomeContentState extends State<HomeContent> {
           const SizedBox(height: 12),
           ...visibleMatches.map((match) => _compactMatchRow(match)),
           if (matches.length > 6) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Center(
               child: Text(
-                'Showing first 6 matches',
-                style: TextStyle(
-                  color: Colors.greenAccent.shade100,
+                '${matches.length - 6} more fixtures',
+                style: const TextStyle(
+                  color: Colors.greenAccent,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -395,23 +374,30 @@ class _HomeContentState extends State<HomeContent> {
   }) {
     return Row(
       children: [
-        if (logo.isNotEmpty && !isOther)
-          CachedNetworkImage(
-            imageUrl: logo,
-            width: 28,
-            height: 28,
-            errorWidget: (_, __, ___) => const Icon(
-              Icons.emoji_events_rounded,
-              color: Colors.greenAccent,
-            ),
-          )
-        else
-          Icon(
-            isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
-            color: Colors.greenAccent,
-            size: 25,
+        Container(
+          width: 42,
+          height: 42,
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: const Color(0xff0d1117),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white10),
           ),
-        const SizedBox(width: 10),
+          child: logo.isNotEmpty && !isOther
+              ? CachedNetworkImage(
+                  imageUrl: logo,
+                  fit: BoxFit.contain,
+                  errorWidget: (_, __, ___) => Icon(
+                    isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
+                    color: Colors.greenAccent,
+                  ),
+                )
+              : Icon(
+                  isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
+                  color: Colors.greenAccent,
+                ),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,22 +410,60 @@ class _HomeContentState extends State<HomeContent> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (country.isNotEmpty)
-                Text(
-                  country,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
+              const SizedBox(height: 3),
+              Text(
+                country,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
                 ),
+              ),
             ],
           ),
         ),
         Text(
-          '$count matches',
+          '$count fixtures',
           style: const TextStyle(color: Colors.grey, fontSize: 12),
         ),
       ],
+    );
+  }
+
+  Widget _showAllButton({
+    required int leagueId,
+    required String leagueName,
+  }) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LeagueDetailsScreen(
+              leagueId: leagueId,
+              leagueName: leagueName,
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.greenAccent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.25)),
+        ),
+        child: const Center(
+          child: Text(
+            'Show All →',
+            style: TextStyle(
+              color: Colors.greenAccent,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -452,34 +476,49 @@ class _HomeContentState extends State<HomeContent> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white10),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              children: [
-                Text(
-                  _scoreOrTime(fixture),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                  ),
+          Row(
+            children: [
+              Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Column(
+                  children: [
+                    Text(
+                      _scoreOrTime(fixture),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatStatus(fixture.status),
+                      style: const TextStyle(
+                        color: Colors.greenAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatStatus(fixture.status),
-                  style: const TextStyle(
-                    color: Colors.greenAccent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+            ],
           ),
-          Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+          if (fixture.round.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              _cleanRound(fixture.round),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -564,5 +603,19 @@ class _HomeContentState extends State<HomeContent> {
       default:
         return status;
     }
+  }
+
+  String _displayCountry(FixtureModel fixture) {
+    if (fixture.leagueId == 2) return 'Europe';
+    if (fixture.leagueId == 1) return 'International';
+    if (fixture.country.toLowerCase() == 'world') return 'International';
+    return fixture.country.isEmpty ? 'Unknown' : fixture.country;
+  }
+
+  String _cleanRound(String round) {
+    return round
+        .replaceAll('Regular Season - ', 'Matchweek ')
+        .replaceAll('Qualification - ', 'Qualification • ')
+        .replaceAll('League Stage - ', 'League Stage • ');
   }
 }
