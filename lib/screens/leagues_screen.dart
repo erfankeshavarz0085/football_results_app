@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'league_details_screen.dart';
+import 'league_details/league_details_screen.dart';
 
 class LeaguesScreen extends StatefulWidget {
   const LeaguesScreen({super.key});

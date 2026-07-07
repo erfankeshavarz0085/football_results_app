@@ -6,11 +6,10 @@ import 'package:provider/provider.dart';
 import '../models/fixture_model.dart';
 import '../providers/fixture_provider.dart';
 import 'favorites_screen.dart';
-import 'league_details_screen.dart';
+import 'league_details/league_details_screen.dart';
 import 'leagues_screen.dart';
 import 'live_screen.dart';
 import 'search_screen.dart';
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
