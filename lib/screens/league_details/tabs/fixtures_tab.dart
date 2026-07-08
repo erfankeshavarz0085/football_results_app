@@ -9,11 +9,13 @@ import '../../match_details_screen.dart';
 class FixturesTab extends StatefulWidget {
   final int leagueId;
   final String leagueName;
+  final int season;
 
   const FixturesTab({
     super.key,
     required this.leagueId,
     required this.leagueName,
+    required this.season,
   });
 
   @override
@@ -27,7 +29,10 @@ class _FixturesTabState extends State<FixturesTab> {
   @override
   void initState() {
     super.initState();
-    fixturesFuture = ApiService().getLeagueFixtures(widget.leagueId);
+    fixturesFuture = ApiService().getLeagueFixtures(
+      widget.leagueId,
+      season: widget.season,
+    );
   }
 
   @override
@@ -64,7 +69,10 @@ class _FixturesTabState extends State<FixturesTab> {
           onRefresh: () async {
             setState(() {
               selectedRound = null;
-              fixturesFuture = ApiService().getLeagueFixtures(widget.leagueId);
+              fixturesFuture = ApiService().getLeagueFixtures(
+                widget.leagueId,
+                season: widget.season,
+              );
             });
           },
           child: ListView(

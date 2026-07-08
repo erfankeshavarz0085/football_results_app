@@ -48,14 +48,20 @@ class FixtureProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadLeagueStandings(int leagueId) async {
+  Future<void> loadLeagueStandings(
+    int leagueId, {
+    int season = 2024,
+  }) async {
     isStandingsLoading = true;
     standingsErrorMessage = null;
     notifyListeners();
 
     try {
-      final standings = await _apiService.getLeagueStandings(leagueId);
-      standingsByLeague[leagueId] = standings;
+      final standings = await _apiService.getLeagueStandings(
+        leagueId,
+        season: season,
+      );
+      standingsByLeague[_standingsKey(leagueId, season)] = standings;
     } catch (e) {
       standingsErrorMessage = e.toString();
     }
@@ -64,7 +70,14 @@ class FixtureProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<StandingModel> getStandingsForLeague(int leagueId) {
-    return standingsByLeague[leagueId] ?? [];
+  List<StandingModel> getStandingsForLeague(
+    int leagueId, {
+    int season = 2024,
+  }) {
+    return standingsByLeague[_standingsKey(leagueId, season)] ?? [];
+  }
+
+  int _standingsKey(int leagueId, int season) {
+    return leagueId * 10000 + season;
   }
 }

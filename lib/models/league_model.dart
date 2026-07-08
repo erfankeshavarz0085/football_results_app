@@ -5,6 +5,7 @@ class LeagueModel {
   final String name;
   final String country;
   final String season;
+  final int apiSeason;
   final String logoUrl;
   final IconData fallbackIcon;
 
@@ -13,6 +14,7 @@ class LeagueModel {
     required this.name,
     required this.country,
     required this.season,
+    required this.apiSeason,
     required this.logoUrl,
     required this.fallbackIcon,
   });
@@ -23,6 +25,7 @@ class LeagueModel {
       'name': name,
       'country': country,
       'season': season,
+      'apiSeason': apiSeason,
       'logoUrl': logoUrl,
       'icon': fallbackIcon,
     };
@@ -36,6 +39,7 @@ class LeagueCatalog {
       name: 'Premier League',
       country: 'England',
       season: '2024/2025',
+      apiSeason: 2024,
       logoUrl: 'https://media.api-sports.io/football/leagues/39.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -44,6 +48,7 @@ class LeagueCatalog {
       name: 'La Liga',
       country: 'Spain',
       season: '2024/2025',
+      apiSeason: 2024,
       logoUrl: 'https://media.api-sports.io/football/leagues/140.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -52,6 +57,7 @@ class LeagueCatalog {
       name: 'Serie A',
       country: 'Italy',
       season: '2024/2025',
+      apiSeason: 2024,
       logoUrl: 'https://media.api-sports.io/football/leagues/135.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -60,6 +66,7 @@ class LeagueCatalog {
       name: 'Bundesliga',
       country: 'Germany',
       season: '2024/2025',
+      apiSeason: 2024,
       logoUrl: 'https://media.api-sports.io/football/leagues/78.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -68,6 +75,7 @@ class LeagueCatalog {
       name: 'Ligue 1',
       country: 'France',
       season: '2024/2025',
+      apiSeason: 2024,
       logoUrl: 'https://media.api-sports.io/football/leagues/61.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -76,6 +84,7 @@ class LeagueCatalog {
       name: 'Champions League',
       country: 'Europe',
       season: '2024/2025',
+      apiSeason: 2024,
       logoUrl: 'https://media.api-sports.io/football/leagues/2.png',
       fallbackIcon: Icons.emoji_events_rounded,
     ),
@@ -83,7 +92,8 @@ class LeagueCatalog {
       id: 1,
       name: 'World Cup',
       country: 'International',
-      season: '2026',
+      season: '2022',
+      apiSeason: 2022,
       logoUrl: 'https://media.api-sports.io/football/leagues/1.png',
       fallbackIcon: Icons.public_rounded,
     ),
@@ -101,6 +111,7 @@ class LeagueCatalog {
       name: fallbackName,
       country: 'Unknown',
       season: '2024/2025',
+      apiSeason: 2024,
       logoUrl: 'https://media.api-sports.io/football/leagues/$id.png',
       fallbackIcon: Icons.emoji_events_rounded,
     );

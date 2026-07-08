@@ -45,8 +45,16 @@ class LeagueDetailsScreen extends StatelessWidget {
                 child: TabBarView(
                   children: [
                     OverviewTab(leagueInfo: info),
-                    FixturesTab(leagueId: leagueId, leagueName: leagueName),
-                    StandingsTab(leagueId: leagueId, leagueName: leagueName),
+                    FixturesTab(
+                      leagueId: leagueId,
+                      leagueName: leagueName,
+                      season: league.apiSeason,
+                    ),
+                    StandingsTab(
+                      leagueId: leagueId,
+                      leagueName: leagueName,
+                      season: league.apiSeason,
+                    ),
                     HistoryTab(leagueId: leagueId, leagueName: leagueName),
                   ],
                 ),

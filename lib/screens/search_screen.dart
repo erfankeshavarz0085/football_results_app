@@ -1,5 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../models/team_model.dart';
+import '../providers/team_provider.dart';
 import 'team_details_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -11,64 +17,96 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   String query = '';
+  Timer? _debounce;
 
-  final teams = [
-    {
-      'id': 40,
-      'name': 'Liverpool',
-      'league': 'Premier League',
-      'logo': 'https://media.api-sports.io/football/teams/40.png',
-    },
-    {
-      'id': 49,
-      'name': 'Chelsea',
-      'league': 'Premier League',
-      'logo': 'https://media.api-sports.io/football/teams/49.png',
-    },
-    {
-      'id': 529,
-      'name': 'Barcelona',
-      'league': 'La Liga',
-      'logo': 'https://media.api-sports.io/football/teams/529.png',
-    },
-    {
-      'id': 541,
-      'name': 'Real Madrid',
-      'league': 'La Liga',
-      'logo': 'https://media.api-sports.io/football/teams/541.png',
-    },
-    {
-      'id': 505,
-      'name': 'Inter Milan',
-      'league': 'Serie A',
-      'logo': 'https://media.api-sports.io/football/teams/505.png',
-    },
-    {
-      'id': 496,
-      'name': 'Juventus',
-      'league': 'Serie A',
-      'logo': 'https://media.api-sports.io/football/teams/496.png',
-    },
-    {
-      'id': 157,
-      'name': 'Bayern Munich',
-      'league': 'Bundesliga',
-      'logo': 'https://media.api-sports.io/football/teams/157.png',
-    },
-    {
-      'id': 85,
-      'name': 'PSG',
-      'league': 'Ligue 1',
-      'logo': 'https://media.api-sports.io/football/teams/85.png',
-    },
+  final List<TeamModel> popularTeams = [
+    TeamModel(
+      id: 40,
+      name: 'Liverpool',
+      country: 'England',
+      logo: 'https://media.api-sports.io/football/teams/40.png',
+      founded: 0,
+      venueName: '',
+      venueCity: '',
+      venueCapacity: 0,
+    ),
+    TeamModel(
+      id: 49,
+      name: 'Chelsea',
+      country: 'England',
+      logo: 'https://media.api-sports.io/football/teams/49.png',
+      founded: 0,
+      venueName: '',
+      venueCity: '',
+      venueCapacity: 0,
+    ),
+    TeamModel(
+      id: 529,
+      name: 'Barcelona',
+      country: 'Spain',
+      logo: 'https://media.api-sports.io/football/teams/529.png',
+      founded: 0,
+      venueName: '',
+      venueCity: '',
+      venueCapacity: 0,
+    ),
+    TeamModel(
+      id: 541,
+      name: 'Real Madrid',
+      country: 'Spain',
+      logo: 'https://media.api-sports.io/football/teams/541.png',
+      founded: 0,
+      venueName: '',
+      venueCity: '',
+      venueCapacity: 0,
+    ),
+    TeamModel(
+      id: 505,
+      name: 'Inter Milan',
+      country: 'Italy',
+      logo: 'https://media.api-sports.io/football/teams/505.png',
+      founded: 0,
+      venueName: '',
+      venueCity: '',
+      venueCapacity: 0,
+    ),
+    TeamModel(
+      id: 157,
+      name: 'Bayern Munich',
+      country: 'Germany',
+      logo: 'https://media.api-sports.io/football/teams/157.png',
+      founded: 0,
+      venueName: '',
+      venueCity: '',
+      venueCapacity: 0,
+    ),
   ];
 
   @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() => query = value);
+
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 450), () {
+      if (!mounted) return;
+
+      Provider.of<TeamProvider>(
+        context,
+        listen: false,
+      ).searchTeams(value);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final filteredTeams = teams.where((team) {
-      final name = team['name'].toString().toLowerCase();
-      return name.contains(query.toLowerCase());
-    }).toList();
+    final provider = Provider.of<TeamProvider>(context);
+    final trimmedQuery = query.trim();
+    final teams = trimmedQuery.length < 3 ? popularTeams : provider.searchResults;
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
@@ -82,16 +120,25 @@ class _SearchScreenState extends State<SearchScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           TextField(
-            onChanged: (value) {
-              setState(() {
-                query = value;
-              });
-            },
+            onChanged: _onSearchChanged,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: 'Search teams...',
               hintStyle: const TextStyle(color: Colors.grey),
               prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+              suffixIcon: query.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                      onPressed: () {
+                        _debounce?.cancel();
+                        setState(() => query = '');
+                        Provider.of<TeamProvider>(
+                          context,
+                          listen: false,
+                        ).searchTeams('');
+                      },
+                    )
+                  : null,
               filled: true,
               fillColor: const Color(0xff161b22),
               border: OutlineInputBorder(
@@ -101,40 +148,47 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          if (filteredTeams.isEmpty)
+          _searchHint(trimmedQuery),
+          const SizedBox(height: 12),
+          if (provider.isSearchLoading)
             const Center(
               child: Padding(
-                padding: EdgeInsets.only(top: 80),
-                child: Text(
-                  'No teams found',
-                  style: TextStyle(color: Colors.grey),
-                ),
+                padding: EdgeInsets.only(top: 60),
+                child: CircularProgressIndicator(color: Colors.greenAccent),
               ),
             )
+          else if (provider.searchErrorMessage != null && trimmedQuery.length >= 3)
+            _messageBox('Team search failed. Please try again.')
+          else if (teams.isEmpty)
+            _messageBox('No teams found')
           else
-            ...filteredTeams.map((team) {
-              return _teamCard(
-                team['id'] as int,
-                team['name'].toString(),
-                team['league'].toString(),
-                team['logo'].toString(),
-              );
-            }),
+            ...teams.map(_teamCard),
         ],
       ),
     );
   }
 
-  Widget _teamCard(int teamId, String name, String league, String logo) {
+  Widget _searchHint(String trimmedQuery) {
+    final text = trimmedQuery.length < 3
+        ? 'Popular teams. Type at least 3 letters to search all teams.'
+        : 'Search results';
+
+    return Text(
+      text,
+      style: const TextStyle(color: Colors.grey, fontSize: 12),
+    );
+  }
+
+  Widget _teamCard(TeamModel team) {
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => TeamDetailsScreen(
-              teamId: teamId,
-              fallbackName: name,
-              fallbackLogo: logo,
+              teamId: team.id,
+              fallbackName: team.name,
+              fallbackLogo: team.logo,
             ),
           ),
         );
@@ -150,12 +204,27 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: const Color(0xff0d1117),
-              backgroundImage: NetworkImage(logo),
-              child: logo.isEmpty
-                  ? const Icon(Icons.shield_rounded, color: Colors.greenAccent)
-                  : null,
+            Container(
+              width: 42,
+              height: 42,
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: const Color(0xff0d1117),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: team.logo.isEmpty
+                  ? const Icon(
+                      Icons.shield_rounded,
+                      color: Colors.greenAccent,
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: team.logo,
+                      fit: BoxFit.contain,
+                      errorWidget: (_, __, ___) => const Icon(
+                        Icons.shield_rounded,
+                        color: Colors.greenAccent,
+                      ),
+                    ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -163,7 +232,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    team.name,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -171,7 +240,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    league,
+                    team.country.isEmpty ? 'Unknown country' : team.country,
                     style: const TextStyle(color: Colors.grey),
                   ),
                 ],
@@ -183,6 +252,18 @@ class _SearchScreenState extends State<SearchScreen> {
               size: 16,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _messageBox(String text) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 60),
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.grey),
         ),
       ),
     );

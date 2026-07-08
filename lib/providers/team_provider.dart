@@ -10,6 +10,10 @@ class TeamProvider extends ChangeNotifier {
   String? errorMessage;
   TeamDetailsModel? teamDetails;
 
+  bool isSearchLoading = false;
+  String? searchErrorMessage;
+  List<TeamModel> searchResults = [];
+
   Future<void> loadTeamDetails(int teamId) async {
     isLoading = true;
     errorMessage = null;
@@ -23,6 +27,31 @@ class TeamProvider extends ChangeNotifier {
     }
 
     isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> searchTeams(String query) async {
+    final trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 3) {
+      searchResults = [];
+      searchErrorMessage = null;
+      isSearchLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    isSearchLoading = true;
+    searchErrorMessage = null;
+    notifyListeners();
+
+    try {
+      searchResults = await _apiService.searchTeams(trimmedQuery);
+    } catch (e) {
+      searchErrorMessage = e.toString();
+    }
+
+    isSearchLoading = false;
     notifyListeners();
   }
 }

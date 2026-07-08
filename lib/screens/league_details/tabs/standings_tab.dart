@@ -8,11 +8,13 @@ import '../../../providers/fixture_provider.dart';
 class StandingsTab extends StatefulWidget {
   final int leagueId;
   final String leagueName;
+  final int season;
 
   const StandingsTab({
     super.key,
     required this.leagueId,
     required this.leagueName,
+    required this.season,
   });
 
   @override
@@ -31,7 +33,10 @@ class _StandingsTabState extends State<StandingsTab> {
       Provider.of<FixtureProvider>(
         context,
         listen: false,
-      ).loadLeagueStandings(widget.leagueId);
+      ).loadLeagueStandings(
+        widget.leagueId,
+        season: widget.season,
+      );
     });
   }
 
@@ -42,7 +47,10 @@ class _StandingsTabState extends State<StandingsTab> {
     final provider = Provider.of<FixtureProvider>(context);
 
     final standings =
-        provider.getStandingsForLeague(widget.leagueId);
+        provider.getStandingsForLeague(
+          widget.leagueId,
+          season: widget.season,
+        );
 
 
     return Scaffold(
@@ -81,11 +89,14 @@ class _StandingsTabState extends State<StandingsTab> {
 
             else if (standings.isEmpty)
 
-              const Expanded(
+              Expanded(
                 child: Center(
                   child: Text(
-                    'No standings available',
-                    style: TextStyle(
+                    widget.leagueId == 1
+                        ? 'World Cup standings may appear after the group stage starts'
+                        : 'No standings available',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 16,
                     ),

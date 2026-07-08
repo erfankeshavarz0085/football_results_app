@@ -44,9 +44,10 @@ class ApiService {
     );
   }
 
-  Future<List<FixtureModel>> getLeagueFixtures(int leagueId) async {
-    const season = 2024;
-
+  Future<List<FixtureModel>> getLeagueFixtures(
+    int leagueId, {
+    int season = 2024,
+  }) async {
     final url = Uri.parse(
       '${AppConstants.baseUrl}/fixtures?league=$leagueId&season=$season&timezone=Asia/Tehran',
     );
@@ -58,9 +59,10 @@ class ApiService {
     );
   }
 
-  Future<List<StandingModel>> getLeagueStandings(int leagueId) async {
-    const season = 2024;
-
+  Future<List<StandingModel>> getLeagueStandings(
+    int leagueId, {
+    int season = 2024,
+  }) async {
     final url = Uri.parse(
       '${AppConstants.baseUrl}/standings?league=$leagueId&season=$season',
     );
@@ -74,11 +76,11 @@ class ApiService {
 
   Future<List<FixtureModel>> getWorldCupFixtures() async {
     final url = Uri.parse(
-      '${AppConstants.baseUrl}/fixtures?league=1&season=2026&timezone=Asia/Tehran',
+      '${AppConstants.baseUrl}/fixtures?league=1&season=2022&timezone=Asia/Tehran',
     );
 
     return _fetchFixturesWithCache(
-      cacheKey: 'world_cup_2026',
+      cacheKey: 'world_cup_2022',
       url: url,
       cacheDuration: const Duration(minutes: 30),
     );
@@ -279,6 +281,27 @@ class ApiService {
     } catch (e) {
       debugPrint('TEAM DETAILS ERROR: $e');
       throw Exception('خطا در دریافت اطلاعات تیم: $e');
+    }
+  }
+
+  Future<List<TeamModel>> searchTeams(String query) async {
+    final trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 3) {
+      return [];
+    }
+
+    final url = Uri.parse(
+      '${AppConstants.baseUrl}/teams?search=${Uri.encodeQueryComponent(trimmedQuery)}',
+    );
+
+    try {
+      final responseList = await _fetchResponseList(url);
+
+      return responseList.map((json) => TeamModel.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('TEAM SEARCH ERROR: $e');
+      throw Exception('خطا در جستجوی تیم‌ها: $e');
     }
   }
 

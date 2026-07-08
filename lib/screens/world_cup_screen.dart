@@ -25,7 +25,7 @@ class _WorldCupScreenState extends State<WorldCupScreen> {
       backgroundColor: const Color(0xff0d1117),
       appBar: AppBar(
         title: const Text(
-          'World Cup 2026',
+          'World Cup 2022',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -52,7 +52,7 @@ class _WorldCupScreenState extends State<WorldCupScreen> {
           if (matches.isEmpty) {
             return const Center(
               child: Text(
-                'اطلاعاتی برای جام جهانی 2026 پیدا نشد',
+                'اطلاعاتی برای جام جهانی 2022 پیدا نشد',
                 style: TextStyle(color: Colors.grey),
               ),
             );
@@ -88,7 +88,7 @@ class _WorldCupScreenState extends State<WorldCupScreen> {
           SizedBox(width: 14),
           Expanded(
             child: Text(
-              'FIFA World Cup 2026 matches, results and schedule.',
+              'FIFA World Cup 2022 matches, results and schedule.',
               style: TextStyle(color: Colors.white70, height: 1.4),
             ),
           ),
