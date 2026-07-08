@@ -258,6 +258,14 @@ class ApiService {
       '${AppConstants.baseUrl}/fixtures?team=$teamId&season=$season&last=5&timezone=Asia/Tehran',
     );
 
+    final squadUrl = Uri.parse(
+      '${AppConstants.baseUrl}/players/squads?team=$teamId',
+    );
+
+    final coachesUrl = Uri.parse(
+      '${AppConstants.baseUrl}/coachs?team=$teamId',
+    );
+
     try {
       final teamResponse = await _fetchResponseList(teamUrl);
 
@@ -270,18 +278,77 @@ class ApiService {
         'team fixtures',
       );
 
+      final squadResponse = await _fetchOptionalResponseList(
+        squadUrl,
+        'team squad',
+      );
+
+      final coachesResponse = await _fetchOptionalResponseList(
+        coachesUrl,
+        'team coach',
+      );
+
       final recentFixtures = fixturesResponse
           .map((json) => FixtureModel.fromJson(json))
           .toList();
 
+      final squad = _parseTeamSquad(squadResponse);
+      final coach = _parseTeamCoach(coachesResponse);
+      final lineup = await _findRecentTeamLineup(teamId, recentFixtures);
+
       return TeamDetailsModel(
         team: TeamModel.fromJson(teamResponse[0]),
         recentFixtures: recentFixtures,
+        squad: squad,
+        coach: coach,
+        lineup: lineup,
       );
     } catch (e) {
       debugPrint('TEAM DETAILS ERROR: $e');
       throw Exception('خطا در دریافت اطلاعات تیم: $e');
     }
+  }
+
+  List<TeamPlayerModel> _parseTeamSquad(List<dynamic> responseList) {
+    if (responseList.isEmpty) {
+      return [];
+    }
+
+    final List players = responseList[0]['players'] ?? [];
+
+    return players.map((json) => TeamPlayerModel.fromJson(json)).toList();
+  }
+
+  TeamCoachModel? _parseTeamCoach(List<dynamic> responseList) {
+    if (responseList.isEmpty) {
+      return null;
+    }
+
+    return TeamCoachModel.fromJson(responseList[0]);
+  }
+
+  Future<TeamLineupSummaryModel?> _findRecentTeamLineup(
+    int teamId,
+    List<FixtureModel> fixtures,
+  ) async {
+    for (final fixture in fixtures.take(5)) {
+      final lineupsUrl = Uri.parse(
+        '${AppConstants.baseUrl}/fixtures/lineups?fixture=${fixture.id}',
+      );
+
+      final lineupsResponse = await _fetchOptionalResponseList(
+        lineupsUrl,
+        'team recent lineup',
+      );
+
+      for (final lineupJson in lineupsResponse) {
+        if (lineupJson['team']?['id'] == teamId) {
+          return TeamLineupSummaryModel.fromJson(lineupJson);
+        }
+      }
+    }
+
+    return null;
   }
 
   Future<List<TeamModel>> searchTeams(String query) async {
