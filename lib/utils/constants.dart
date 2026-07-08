@@ -1,6 +1,6 @@
 class AppConstants {
   // API
-  static const String apiKey = "0297e130160d7c40d2e56d82a55e6d2d";
+  static const String apiKey = "7da1d62d3a3b98ff9c82af09ebda9e46";
   static const String baseUrl = "https://v3.football.api-sports.io";
 
   // لیگ‌ها
