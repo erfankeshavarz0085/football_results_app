@@ -6,13 +6,14 @@ import '../models/fixture_model.dart';
 import '../utils/constants.dart';
 
 class ApiService {
+  static final Map<String, _CacheItem<List<FixtureModel>>> _fixtureCache = {};
+
   Map<String, String> get _headers => {
         'x-apisports-key': AppConstants.apiKey,
       };
 
   Future<List<FixtureModel>> getTodayFixtures() async {
     final now = DateTime.now();
-
     final date =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
@@ -20,7 +21,11 @@ class ApiService {
       '${AppConstants.baseUrl}/fixtures?date=$date&timezone=Asia/Tehran',
     );
 
-    return _fetchFixtures(url);
+    return _fetchFixturesWithCache(
+      cacheKey: 'today_$date',
+      url: url,
+      cacheDuration: const Duration(minutes: 5),
+    );
   }
 
   Future<List<FixtureModel>> getLiveFixtures() async {
@@ -28,27 +33,25 @@ class ApiService {
       '${AppConstants.baseUrl}/fixtures?live=all&timezone=Asia/Tehran',
     );
 
-    return _fetchFixtures(url);
+    return _fetchFixturesWithCache(
+      cacheKey: 'live_fixtures',
+      url: url,
+      cacheDuration: const Duration(seconds: 30),
+    );
   }
 
   Future<List<FixtureModel>> getLeagueFixtures(int leagueId) async {
-    final seasonsToTry = [2024];
+    const season = 2024;
 
-    for (final season in seasonsToTry) {
-      final url = Uri.parse(
-        '${AppConstants.baseUrl}/fixtures?league=$leagueId&season=$season&timezone=Asia/Tehran',
-      );
+    final url = Uri.parse(
+      '${AppConstants.baseUrl}/fixtures?league=$leagueId&season=$season&timezone=Asia/Tehran',
+    );
 
-      final fixtures = await _fetchFixtures(url);
-
-      debugPrint('League $leagueId season $season fixtures count: ${fixtures.length}');
-
-      if (fixtures.isNotEmpty) {
-        return fixtures;
-      }
-    }
-
-    return [];
+    return _fetchFixturesWithCache(
+      cacheKey: 'league_${leagueId}_season_$season',
+      url: url,
+      cacheDuration: const Duration(minutes: 30),
+    );
   }
 
   Future<List<FixtureModel>> getWorldCupFixtures() async {
@@ -56,7 +59,31 @@ class ApiService {
       '${AppConstants.baseUrl}/fixtures?league=1&season=2026&timezone=Asia/Tehran',
     );
 
-    return _fetchFixtures(url);
+    return _fetchFixturesWithCache(
+      cacheKey: 'world_cup_2026',
+      url: url,
+      cacheDuration: const Duration(minutes: 30),
+    );
+  }
+
+  Future<List<FixtureModel>> _fetchFixturesWithCache({
+    required String cacheKey,
+    required Uri url,
+    required Duration cacheDuration,
+  }) async {
+    final cached = _fixtureCache[cacheKey];
+
+    if (cached != null && !cached.isExpired(cacheDuration)) {
+      debugPrint('CACHE HIT: $cacheKey');
+      return cached.data;
+    }
+
+    debugPrint('CACHE MISS: $cacheKey');
+
+    final data = await _fetchFixtures(url);
+    _fixtureCache[cacheKey] = _CacheItem(data: data);
+
+    return data;
   }
 
   Future<List<FixtureModel>> _fetchFixtures(Uri url) async {
@@ -68,10 +95,14 @@ class ApiService {
           .timeout(const Duration(seconds: 15));
 
       debugPrint('STATUS: ${response.statusCode}');
-      debugPrint('BODY: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+
+        if (data['errors'] != null && data['errors'].toString() != '{}') {
+          debugPrint('API ERRORS: ${data['errors']}');
+        }
+
         final List fixtures = data['response'] ?? [];
 
         return fixtures.map((json) => FixtureModel.fromJson(json)).toList();
@@ -82,5 +113,18 @@ class ApiService {
       debugPrint('API EXCEPTION: $e');
       throw Exception('خطا در دریافت اطلاعات: $e');
     }
+  }
+}
+
+class _CacheItem<T> {
+  final T data;
+  final DateTime createdAt;
+
+  _CacheItem({
+    required this.data,
+  }) : createdAt = DateTime.now();
+
+  bool isExpired(Duration duration) {
+    return DateTime.now().difference(createdAt) > duration;
   }
 }
