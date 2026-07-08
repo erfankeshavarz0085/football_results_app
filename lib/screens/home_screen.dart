@@ -10,6 +10,7 @@ import 'league_details/league_details_screen.dart';
 import 'leagues_screen.dart';
 import 'live_screen.dart';
 import 'search_screen.dart';
+import 'match_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -453,34 +454,64 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  Widget _compactMatchRow(
-    FixtureModel fixture, {
-    required bool showCompetitionInfo,
-  }) {
-    return Container(
+ Widget _compactMatchRow(
+  FixtureModel fixture, {
+  required bool showCompetitionInfo,
+}) {
+  return InkWell(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MatchDetailsScreen(
+            fixtureId: fixture.id,
+          ),
+        ),
+      );
+    },
+
+    borderRadius: BorderRadius.circular(16),
+
+    child: Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 12,
+      ),
+
       decoration: BoxDecoration(
         color: const Color(0xff0d1117),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: Colors.white10,
+        ),
       ),
+
       child: Column(
         children: [
+
           if (showCompetitionInfo) ...[
+
             Row(
               children: [
+
                 const Icon(
                   Icons.emoji_events_rounded,
                   color: Colors.greenAccent,
                   size: 15,
                 ),
+
                 const SizedBox(width: 6),
+
                 Expanded(
                   child: Text(
                     '${_displayCountry(fixture)} • ${fixture.leagueName}',
+
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+
+                    overflow:
+                        TextOverflow.ellipsis,
+
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 11,
@@ -488,8 +519,104 @@ class _HomeContentState extends State<HomeContent> {
                     ),
                   ),
                 ),
+
               ],
             ),
+
+            const SizedBox(height: 10),
+
+          ],
+
+
+          Row(
+            children: [
+
+              Expanded(
+                child: _teamMini(
+                  fixture.homeTeam,
+                  fixture.homeLogo,
+                ),
+              ),
+
+
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(
+                      horizontal: 10,
+                    ),
+
+                child: Column(
+                  children: [
+
+                    Text(
+                      _scoreOrTime(fixture),
+
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+
+
+                    const SizedBox(height: 4),
+
+
+                    Text(
+                      _formatStatus(
+                        fixture.status,
+                      ),
+
+                      style: const TextStyle(
+                        color: Colors.greenAccent,
+                        fontSize: 11,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+
+                  ],
+                ),
+              ),
+
+
+              Expanded(
+                child: _teamMini(
+                  fixture.awayTeam,
+                  fixture.awayLogo,
+                ),
+              ),
+
+            ],
+          ),
+
+
+          if (fixture.round.isNotEmpty) ...[
+
+            const SizedBox(height: 10),
+
+            Text(
+              _cleanRound(
+                fixture.round,
+              ),
+
+              textAlign:
+                  TextAlign.center,
+
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 11,
+              ),
+            ),
+
+          ],
+
+        ],
+      ),
+    ),
+  );
+}
             const SizedBox(height: 10),
           ],
           Row(

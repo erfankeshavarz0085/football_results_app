@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/fixture_model.dart';
 import '../models/standing_model.dart';
 import '../utils/constants.dart';
+import '../models/match_detail_model.dart';
 
 class ApiService {
   static final Map<String, _CacheItem<List<FixtureModel>>> _fixtureCache = {};
@@ -191,6 +192,61 @@ class ApiService {
       throw Exception('خطا در دریافت جدول: $e');
     }
   }
+  Future<MatchDetailModel?> getMatchDetails(int fixtureId) async {
+  final url = Uri.parse(
+    '${AppConstants.baseUrl}/fixtures?id=$fixtureId',
+  );
+
+  try {
+    debugPrint('API URL: $url');
+
+    final response = await http
+        .get(
+          url,
+          headers: _headers,
+        )
+        .timeout(
+          const Duration(seconds: 15),
+        );
+
+    debugPrint('STATUS: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data['errors'] != null &&
+          data['errors'].toString() != '{}') {
+        debugPrint(
+          'API ERRORS: ${data['errors']}',
+        );
+      }
+
+      final List responseList =
+          data['response'] ?? [];
+
+      if (responseList.isEmpty) {
+        return null;
+      }
+
+      return MatchDetailModel.fromJson(
+        responseList[0],
+      );
+    }
+
+    throw Exception(
+      'API Error: ${response.statusCode}',
+    );
+
+  } catch (e) {
+    debugPrint(
+      'MATCH DETAIL ERROR: $e',
+    );
+
+    throw Exception(
+      'خطا در دریافت جزئیات بازی: $e',
+    );
+  }
+}
 }
 
 class _CacheItem<T> {
