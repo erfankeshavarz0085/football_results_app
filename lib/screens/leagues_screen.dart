@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../models/league_model.dart';
 import 'league_details/league_details_screen.dart';
 
 class LeaguesScreen extends StatefulWidget {
@@ -12,59 +14,16 @@ class LeaguesScreen extends StatefulWidget {
 class _LeaguesScreenState extends State<LeaguesScreen> {
   String searchQuery = '';
 
-  final List<Map<String, dynamic>> leagues = const [
-    {
-      'id': 39,
-      'name': 'Premier League',
-      'country': 'England',
-      'icon': Icons.sports_soccer,
-    },
-    {
-      'id': 140,
-      'name': 'La Liga',
-      'country': 'Spain',
-      'icon': Icons.sports_soccer,
-    },
-    {
-      'id': 135,
-      'name': 'Serie A',
-      'country': 'Italy',
-      'icon': Icons.sports_soccer,
-    },
-    {
-      'id': 78,
-      'name': 'Bundesliga',
-      'country': 'Germany',
-      'icon': Icons.sports_soccer,
-    },
-    {
-      'id': 61,
-      'name': 'Ligue 1',
-      'country': 'France',
-      'icon': Icons.sports_soccer,
-    },
-    {
-      'id': 2,
-      'name': 'Champions League',
-      'country': 'Europe',
-      'icon': Icons.emoji_events_rounded,
-    },
-    {
-      'id': 1,
-      'name': 'World Cup',
-      'country': 'International',
-      'icon': Icons.public_rounded,
-    },
-  ];
+  final List<LeagueModel> leagues = LeagueCatalog.topLeagues;
 
-  List<Map<String, dynamic>> get filteredLeagues {
+  List<LeagueModel> get filteredLeagues {
     if (searchQuery.trim().isEmpty) return leagues;
 
     final query = searchQuery.toLowerCase().trim();
 
     return leagues.where((league) {
-      final name = league['name'].toString().toLowerCase();
-      final country = league['country'].toString().toLowerCase();
+      final name = league.name.toLowerCase();
+      final country = league.country.toLowerCase();
 
       return name.contains(query) || country.contains(query);
     }).toList();
@@ -199,7 +158,7 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
     );
   }
 
-  Widget _leagueCard(BuildContext context, Map<String, dynamic> league) {
+  Widget _leagueCard(BuildContext context, LeagueModel league) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -217,13 +176,20 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white10),
           ),
-          child: Icon(
-            league['icon'] as IconData,
-            color: Colors.greenAccent,
+          child: Padding(
+            padding: const EdgeInsets.all(7),
+            child: CachedNetworkImage(
+              imageUrl: league.logoUrl,
+              fit: BoxFit.contain,
+              errorWidget: (_, __, ___) => Icon(
+                league.fallbackIcon,
+                color: Colors.greenAccent,
+              ),
+            ),
           ),
         ),
         title: Text(
-          league['name'].toString(),
+          league.name,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -232,7 +198,7 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
-            league['country'].toString(),
+            league.country,
             style: const TextStyle(color: Colors.grey),
           ),
         ),
@@ -264,8 +230,8 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
             context,
             MaterialPageRoute(
               builder: (_) => LeagueDetailsScreen(
-                leagueId: league['id'] as int,
-                leagueName: league['name'].toString(),
+                leagueId: league.id,
+                leagueName: league.name,
               ),
             ),
           );

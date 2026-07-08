@@ -127,9 +127,7 @@ class ApiService {
     try {
       debugPrint('API URL: $url');
 
-      final response = await http
-          .get(url, headers: _headers)
-          .timeout(const Duration(seconds: 15));
+      final response = await _getWithRetry(url);
 
       debugPrint('STATUS: ${response.statusCode}');
 
@@ -156,9 +154,7 @@ class ApiService {
     try {
       debugPrint('API URL: $url');
 
-      final response = await http
-          .get(url, headers: _headers)
-          .timeout(const Duration(seconds: 15));
+      final response = await _getWithRetry(url);
 
       debugPrint('STATUS: ${response.statusCode}');
 
@@ -193,60 +189,113 @@ class ApiService {
     }
   }
   Future<MatchDetailModel?> getMatchDetails(int fixtureId) async {
-  final url = Uri.parse(
-    '${AppConstants.baseUrl}/fixtures?id=$fixtureId',
-  );
+    final fixtureUrl = Uri.parse(
+      '${AppConstants.baseUrl}/fixtures?id=$fixtureId',
+    );
 
-  try {
-    debugPrint('API URL: $url');
+    final eventsUrl = Uri.parse(
+      '${AppConstants.baseUrl}/fixtures/events?fixture=$fixtureId',
+    );
 
-    final response = await http
-        .get(
-          url,
-          headers: _headers,
-        )
-        .timeout(
-          const Duration(seconds: 15),
-        );
+    final statisticsUrl = Uri.parse(
+      '${AppConstants.baseUrl}/fixtures/statistics?fixture=$fixtureId',
+    );
 
-    debugPrint('STATUS: ${response.statusCode}');
+    final lineupsUrl = Uri.parse(
+      '${AppConstants.baseUrl}/fixtures/lineups?fixture=$fixtureId',
+    );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+    try {
+      final fixtureList = await _fetchResponseList(fixtureUrl);
 
-      if (data['errors'] != null &&
-          data['errors'].toString() != '{}') {
-        debugPrint(
-          'API ERRORS: ${data['errors']}',
-        );
-      }
-
-      final List responseList =
-          data['response'] ?? [];
-
-      if (responseList.isEmpty) {
+      if (fixtureList.isEmpty) {
         return null;
       }
 
+      final detailResults = await Future.wait([
+        _fetchOptionalResponseList(eventsUrl, 'events'),
+        _fetchOptionalResponseList(statisticsUrl, 'statistics'),
+        _fetchOptionalResponseList(lineupsUrl, 'lineups'),
+      ]);
+
+      final events = detailResults[0]
+          .map((json) => MatchEventModel.fromJson(json))
+          .toList();
+
+      final statistics = detailResults[1]
+          .map((json) => MatchStatisticModel.fromJson(json))
+          .toList();
+
+      final lineups = detailResults[2]
+          .map((json) => MatchLineupModel.fromJson(json))
+          .toList();
+
       return MatchDetailModel.fromJson(
-        responseList[0],
+        fixtureList[0],
+        events: events,
+        statistics: statistics,
+        lineups: lineups,
+      );
+    } catch (e) {
+      debugPrint('MATCH DETAIL ERROR: $e');
+      throw Exception(
+        'خطا در دریافت جزئیات بازی: $e',
       );
     }
-
-    throw Exception(
-      'API Error: ${response.statusCode}',
-    );
-
-  } catch (e) {
-    debugPrint(
-      'MATCH DETAIL ERROR: $e',
-    );
-
-    throw Exception(
-      'خطا در دریافت جزئیات بازی: $e',
-    );
   }
-}
+
+  Future<List<dynamic>> _fetchResponseList(Uri url) async {
+    debugPrint('API URL: $url');
+
+    final response = await _getWithRetry(url);
+
+    debugPrint('STATUS: ${response.statusCode}');
+
+    if (response.statusCode != 200) {
+      throw Exception('API Error: ${response.statusCode}');
+    }
+
+    final data = jsonDecode(response.body);
+
+    if (data['errors'] != null && data['errors'].toString() != '{}') {
+      debugPrint('API ERRORS: ${data['errors']}');
+    }
+
+    return data['response'] ?? [];
+  }
+
+  Future<List<dynamic>> _fetchOptionalResponseList(
+    Uri url,
+    String label,
+  ) async {
+    try {
+      return await _fetchResponseList(url);
+    } catch (e) {
+      debugPrint('OPTIONAL MATCH DETAIL $label ERROR: $e');
+      return [];
+    }
+  }
+
+  Future<http.Response> _getWithRetry(Uri url) async {
+    const maxAttempts = 3;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await http
+            .get(url, headers: _headers)
+            .timeout(const Duration(seconds: 15));
+      } catch (e) {
+        if (attempt == maxAttempts) {
+          rethrow;
+        }
+
+        debugPrint('API RETRY $attempt/$maxAttempts: $e');
+        await Future.delayed(Duration(milliseconds: 500 * attempt));
+      }
+    }
+
+    throw Exception('API request failed');
+  }
 }
 
 class _CacheItem<T> {

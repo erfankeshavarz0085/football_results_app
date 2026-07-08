@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/fixture_model.dart';
 import '../providers/fixture_provider.dart';
+import 'match_details_screen.dart';
 
 class LiveScreen extends StatefulWidget {
   const LiveScreen({super.key});
@@ -206,6 +207,15 @@ class _LiveScreenState extends State<LiveScreen> {
     );
   }
 
+  void _openMatchDetails(int fixtureId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MatchDetailsScreen(fixtureId: fixtureId),
+      ),
+    );
+  }
+
   Widget _otherLiveCard(List<FixtureModel> matches) {
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
@@ -302,7 +312,10 @@ class _LiveScreenState extends State<LiveScreen> {
     final homeScore = fixture.homeScore?.toString() ?? '-';
     final awayScore = fixture.awayScore?.toString() ?? '-';
 
-    return Container(
+    return InkWell(
+      onTap: () => _openMatchDetails(fixture.id),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
@@ -386,6 +399,7 @@ class _LiveScreenState extends State<LiveScreen> {
             ),
           ],
         ],
+      ),
       ),
     );
   }

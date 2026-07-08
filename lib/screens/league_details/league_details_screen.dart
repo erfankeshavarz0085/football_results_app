@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../models/league_model.dart';
 import 'tabs/fixtures_tab.dart';
 import 'tabs/history_tab.dart';
 import 'tabs/overview_tab.dart';
@@ -17,7 +19,8 @@ class LeagueDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final info = _leagueInfo(leagueId, leagueName);
+    final league = LeagueCatalog.byId(leagueId, leagueName);
+    final info = league.toOverviewMap();
 
     return DefaultTabController(
       length: 4,
@@ -75,10 +78,23 @@ class LeagueDetailsScreen extends StatelessWidget {
               const Spacer(),
             ],
           ),
-          CircleAvatar(
-            radius: 34,
-            backgroundColor: Colors.greenAccent,
-            child: Icon(info['icon'], color: Colors.black, size: 36),
+          Container(
+            width: 68,
+            height: 68,
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: CachedNetworkImage(
+              imageUrl: info['logoUrl'],
+              fit: BoxFit.contain,
+              errorWidget: (_, __, ___) => Icon(
+                info['icon'],
+                color: Colors.black,
+                size: 36,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -100,72 +116,4 @@ class LeagueDetailsScreen extends StatelessWidget {
     );
   }
 
-  Map<String, dynamic> _leagueInfo(int id, String fallbackName) {
-    switch (id) {
-      case 39:
-        return {
-          'id': id,
-          'name': 'Premier League',
-          'country': 'England',
-          'season': '2024/2025',
-          'icon': Icons.sports_soccer,
-        };
-      case 140:
-        return {
-          'id': id,
-          'name': 'La Liga',
-          'country': 'Spain',
-          'season': '2024/2025',
-          'icon': Icons.sports_soccer,
-        };
-      case 135:
-        return {
-          'id': id,
-          'name': 'Serie A',
-          'country': 'Italy',
-          'season': '2024/2025',
-          'icon': Icons.sports_soccer,
-        };
-      case 78:
-        return {
-          'id': id,
-          'name': 'Bundesliga',
-          'country': 'Germany',
-          'season': '2024/2025',
-          'icon': Icons.sports_soccer,
-        };
-      case 61:
-        return {
-          'id': id,
-          'name': 'Ligue 1',
-          'country': 'France',
-          'season': '2024/2025',
-          'icon': Icons.sports_soccer,
-        };
-      case 2:
-        return {
-          'id': id,
-          'name': 'Champions League',
-          'country': 'Europe',
-          'season': '2024/2025',
-          'icon': Icons.emoji_events_rounded,
-        };
-      case 1:
-        return {
-          'id': id,
-          'name': 'World Cup',
-          'country': 'International',
-          'season': '2026',
-          'icon': Icons.public_rounded,
-        };
-      default:
-        return {
-          'id': id,
-          'name': fallbackName,
-          'country': 'Unknown',
-          'season': '2024/2025',
-          'icon': Icons.emoji_events_rounded,
-        };
-    }
-  }
 }

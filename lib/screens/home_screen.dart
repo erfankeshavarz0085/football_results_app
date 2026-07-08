@@ -9,6 +9,7 @@ import 'favorites_screen.dart';
 import 'league_details/league_details_screen.dart';
 import 'leagues_screen.dart';
 import 'live_screen.dart';
+import 'match_details_screen.dart';
 import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -457,7 +458,10 @@ class _HomeContentState extends State<HomeContent> {
     FixtureModel fixture, {
     required bool showCompetitionInfo,
   }) {
-    return Container(
+    return InkWell(
+      onTap: () => _openMatchDetails(fixture.id),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
@@ -531,6 +535,16 @@ class _HomeContentState extends State<HomeContent> {
             ),
           ],
         ],
+      ),
+      ),
+    );
+  }
+
+  void _openMatchDetails(int fixtureId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MatchDetailsScreen(fixtureId: fixtureId),
       ),
     );
   }

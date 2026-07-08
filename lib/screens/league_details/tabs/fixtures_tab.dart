@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../models/fixture_model.dart';
 import '../../../services/api_service.dart';
+import '../../match_details_screen.dart';
 
 class FixturesTab extends StatefulWidget {
   final int leagueId;
@@ -258,7 +259,10 @@ class _FixturesTabState extends State<FixturesTab> {
   }
 
   Widget _fixtureCard(FixtureModel fixture) {
-    return Container(
+    return InkWell(
+      onTap: () => _openMatchDetails(fixture.id),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
@@ -303,6 +307,16 @@ class _FixturesTabState extends State<FixturesTab> {
           ),
           Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
         ],
+      ),
+      ),
+    );
+  }
+
+  void _openMatchDetails(int fixtureId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MatchDetailsScreen(fixtureId: fixtureId),
       ),
     );
   }
