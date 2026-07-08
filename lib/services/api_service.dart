@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/fixture_model.dart';
+import '../models/standing_model.dart';
 import '../utils/constants.dart';
 
 class ApiService {
   static final Map<String, _CacheItem<List<FixtureModel>>> _fixtureCache = {};
+  static final Map<String, _CacheItem<List<StandingModel>>> _standingsCache = {};
 
   Map<String, String> get _headers => {
         'x-apisports-key': AppConstants.apiKey,
@@ -54,6 +56,20 @@ class ApiService {
     );
   }
 
+  Future<List<StandingModel>> getLeagueStandings(int leagueId) async {
+    const season = 2024;
+
+    final url = Uri.parse(
+      '${AppConstants.baseUrl}/standings?league=$leagueId&season=$season',
+    );
+
+    return _fetchStandingsWithCache(
+      cacheKey: 'standings_${leagueId}_season_$season',
+      url: url,
+      cacheDuration: const Duration(hours: 1),
+    );
+  }
+
   Future<List<FixtureModel>> getWorldCupFixtures() async {
     final url = Uri.parse(
       '${AppConstants.baseUrl}/fixtures?league=1&season=2026&timezone=Asia/Tehran',
@@ -86,6 +102,26 @@ class ApiService {
     return data;
   }
 
+  Future<List<StandingModel>> _fetchStandingsWithCache({
+    required String cacheKey,
+    required Uri url,
+    required Duration cacheDuration,
+  }) async {
+    final cached = _standingsCache[cacheKey];
+
+    if (cached != null && !cached.isExpired(cacheDuration)) {
+      debugPrint('CACHE HIT: $cacheKey');
+      return cached.data;
+    }
+
+    debugPrint('CACHE MISS: $cacheKey');
+
+    final data = await _fetchStandings(url);
+    _standingsCache[cacheKey] = _CacheItem(data: data);
+
+    return data;
+  }
+
   Future<List<FixtureModel>> _fetchFixtures(Uri url) async {
     try {
       debugPrint('API URL: $url');
@@ -112,6 +148,47 @@ class ApiService {
     } catch (e) {
       debugPrint('API EXCEPTION: $e');
       throw Exception('خطا در دریافت اطلاعات: $e');
+    }
+  }
+
+  Future<List<StandingModel>> _fetchStandings(Uri url) async {
+    try {
+      debugPrint('API URL: $url');
+
+      final response = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 15));
+
+      debugPrint('STATUS: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['errors'] != null && data['errors'].toString() != '{}') {
+          debugPrint('API ERRORS: ${data['errors']}');
+        }
+
+        final List responseList = data['response'] ?? [];
+
+        if (responseList.isEmpty) {
+          return [];
+        }
+
+        final standingsData = responseList[0]['league']?['standings'];
+
+        if (standingsData == null || standingsData.isEmpty) {
+          return [];
+        }
+
+        final List firstTable = standingsData[0] ?? [];
+
+        return firstTable.map((json) => StandingModel.fromJson(json)).toList();
+      } else {
+        throw Exception('API Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API EXCEPTION: $e');
+      throw Exception('خطا در دریافت جدول: $e');
     }
   }
 }

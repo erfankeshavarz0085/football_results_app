@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/fixture_model.dart';
+import '../models/standing_model.dart';
 import '../services/api_service.dart';
 
 class FixtureProvider extends ChangeNotifier {
@@ -9,8 +10,13 @@ class FixtureProvider extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
+  bool isStandingsLoading = false;
+  String? standingsErrorMessage;
+
   List<FixtureModel> todayFixtures = [];
   List<FixtureModel> liveFixtures = [];
+
+  final Map<int, List<StandingModel>> standingsByLeague = {};
 
   Future<void> loadTodayFixtures() async {
     isLoading = true;
@@ -40,5 +46,25 @@ class FixtureProvider extends ChangeNotifier {
 
     isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> loadLeagueStandings(int leagueId) async {
+    isStandingsLoading = true;
+    standingsErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final standings = await _apiService.getLeagueStandings(leagueId);
+      standingsByLeague[leagueId] = standings;
+    } catch (e) {
+      standingsErrorMessage = e.toString();
+    }
+
+    isStandingsLoading = false;
+    notifyListeners();
+  }
+
+  List<StandingModel> getStandingsForLeague(int leagueId) {
+    return standingsByLeague[leagueId] ?? [];
   }
 }
