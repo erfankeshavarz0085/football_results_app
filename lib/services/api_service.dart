@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/fixture_model.dart';
 import '../models/standing_model.dart';
+import '../models/team_model.dart';
 import '../utils/constants.dart';
 import '../models/match_detail_model.dart';
 
@@ -241,6 +242,43 @@ class ApiService {
       throw Exception(
         'خطا در دریافت جزئیات بازی: $e',
       );
+    }
+  }
+
+  Future<TeamDetailsModel?> getTeamDetails(int teamId) async {
+    const season = 2024;
+
+    final teamUrl = Uri.parse(
+      '${AppConstants.baseUrl}/teams?id=$teamId',
+    );
+
+    final fixturesUrl = Uri.parse(
+      '${AppConstants.baseUrl}/fixtures?team=$teamId&season=$season&last=5&timezone=Asia/Tehran',
+    );
+
+    try {
+      final teamResponse = await _fetchResponseList(teamUrl);
+
+      if (teamResponse.isEmpty) {
+        return null;
+      }
+
+      final fixturesResponse = await _fetchOptionalResponseList(
+        fixturesUrl,
+        'team fixtures',
+      );
+
+      final recentFixtures = fixturesResponse
+          .map((json) => FixtureModel.fromJson(json))
+          .toList();
+
+      return TeamDetailsModel(
+        team: TeamModel.fromJson(teamResponse[0]),
+        recentFixtures: recentFixtures,
+      );
+    } catch (e) {
+      debugPrint('TEAM DETAILS ERROR: $e');
+      throw Exception('خطا در دریافت اطلاعات تیم: $e');
     }
   }
 

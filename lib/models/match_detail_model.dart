@@ -9,6 +9,9 @@ class MatchDetailModel {
   final String homeTeam;
   final String awayTeam;
 
+  final int homeTeamId;
+  final int awayTeamId;
+
   final String homeLogo;
   final String awayLogo;
 
@@ -28,6 +31,8 @@ class MatchDetailModel {
     required this.city,
     required this.homeTeam,
     required this.awayTeam,
+    required this.homeTeamId,
+    required this.awayTeamId,
     required this.homeLogo,
     required this.awayLogo,
     required this.homeScore,
@@ -51,6 +56,8 @@ class MatchDetailModel {
       city: json['fixture']?['venue']?['city'] ?? '',
       homeTeam: json['teams']?['home']?['name'] ?? '',
       awayTeam: json['teams']?['away']?['name'] ?? '',
+      homeTeamId: json['teams']?['home']?['id'] ?? 0,
+      awayTeamId: json['teams']?['away']?['id'] ?? 0,
       homeLogo: json['teams']?['home']?['logo'] ?? '',
       awayLogo: json['teams']?['away']?['logo'] ?? '',
       homeScore: json['goals']?['home'],

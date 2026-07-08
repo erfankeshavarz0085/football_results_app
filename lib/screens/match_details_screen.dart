@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/match_detail_model.dart';
 import '../providers/match_detail_provider.dart';
+import 'team_details_screen.dart';
 
 class MatchDetailsScreen extends StatefulWidget {
   final int fixtureId;
@@ -106,7 +107,7 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _team(match.homeTeam, match.homeLogo),
+          _team(match.homeTeamId, match.homeTeam, match.homeLogo),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
@@ -130,7 +131,7 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
               ],
             ),
           ),
-          _team(match.awayTeam, match.awayLogo),
+          _team(match.awayTeamId, match.awayTeam, match.awayLogo),
         ],
       ),
     );
@@ -418,21 +419,38 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
     );
   }
 
-  Widget _team(String name, String logo) {
+  Widget _team(int teamId, String name, String logo) {
     return Expanded(
-      child: Column(
-        children: [
-          _logo(logo, 55),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+      child: InkWell(
+        onTap: teamId == 0
+            ? null
+            : () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TeamDetailsScreen(
+                      teamId: teamId,
+                      fallbackName: name,
+                      fallbackLogo: logo,
+                    ),
+                  ),
+                );
+              },
+        borderRadius: BorderRadius.circular(14),
+        child: Column(
+          children: [
+            _logo(logo, 55),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

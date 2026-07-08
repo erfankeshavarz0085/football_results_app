@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'team_details_screen.dart';
+
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -11,14 +13,54 @@ class _SearchScreenState extends State<SearchScreen> {
   String query = '';
 
   final teams = [
-    {'name': 'Liverpool', 'league': 'Premier League'},
-    {'name': 'Chelsea', 'league': 'Premier League'},
-    {'name': 'Barcelona', 'league': 'La Liga'},
-    {'name': 'Real Madrid', 'league': 'La Liga'},
-    {'name': 'Inter Milan', 'league': 'Serie A'},
-    {'name': 'Juventus', 'league': 'Serie A'},
-    {'name': 'Bayern Munich', 'league': 'Bundesliga'},
-    {'name': 'PSG', 'league': 'Ligue 1'},
+    {
+      'id': 40,
+      'name': 'Liverpool',
+      'league': 'Premier League',
+      'logo': 'https://media.api-sports.io/football/teams/40.png',
+    },
+    {
+      'id': 49,
+      'name': 'Chelsea',
+      'league': 'Premier League',
+      'logo': 'https://media.api-sports.io/football/teams/49.png',
+    },
+    {
+      'id': 529,
+      'name': 'Barcelona',
+      'league': 'La Liga',
+      'logo': 'https://media.api-sports.io/football/teams/529.png',
+    },
+    {
+      'id': 541,
+      'name': 'Real Madrid',
+      'league': 'La Liga',
+      'logo': 'https://media.api-sports.io/football/teams/541.png',
+    },
+    {
+      'id': 505,
+      'name': 'Inter Milan',
+      'league': 'Serie A',
+      'logo': 'https://media.api-sports.io/football/teams/505.png',
+    },
+    {
+      'id': 496,
+      'name': 'Juventus',
+      'league': 'Serie A',
+      'logo': 'https://media.api-sports.io/football/teams/496.png',
+    },
+    {
+      'id': 157,
+      'name': 'Bayern Munich',
+      'league': 'Bundesliga',
+      'logo': 'https://media.api-sports.io/football/teams/157.png',
+    },
+    {
+      'id': 85,
+      'name': 'PSG',
+      'league': 'Ligue 1',
+      'logo': 'https://media.api-sports.io/football/teams/85.png',
+    },
   ];
 
   @override
@@ -72,8 +114,10 @@ class _SearchScreenState extends State<SearchScreen> {
           else
             ...filteredTeams.map((team) {
               return _teamCard(
+                team['id'] as int,
                 team['name'].toString(),
                 team['league'].toString(),
+                team['logo'].toString(),
               );
             }),
         ],
@@ -81,46 +125,65 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _teamCard(String name, String league) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xff161b22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: Colors.greenAccent,
-            child: Icon(Icons.shield_rounded, color: Colors.black),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  league,
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ],
+  Widget _teamCard(int teamId, String name, String league, String logo) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TeamDetailsScreen(
+              teamId: teamId,
+              fallbackName: name,
+              fallbackLogo: logo,
             ),
           ),
-          const Icon(
-            Icons.favorite_border_rounded,
-            color: Colors.greenAccent,
-          ),
-        ],
+        );
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: const Color(0xff0d1117),
+              backgroundImage: NetworkImage(logo),
+              child: logo.isEmpty
+                  ? const Icon(Icons.shield_rounded, color: Colors.greenAccent)
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    league,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.greenAccent,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
