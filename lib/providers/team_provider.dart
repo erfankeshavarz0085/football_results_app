@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/league_model.dart';
 import '../models/team_model.dart';
 import '../services/api_service.dart';
 
@@ -13,6 +14,10 @@ class TeamProvider extends ChangeNotifier {
   bool isSearchLoading = false;
   String? searchErrorMessage;
   List<TeamModel> searchResults = [];
+
+  bool isLeagueSearchLoading = false;
+  String? leagueSearchErrorMessage;
+  List<LeagueModel> leagueSearchResults = [];
 
   Future<void> loadTeamDetails(int teamId) async {
     isLoading = true;
@@ -52,6 +57,31 @@ class TeamProvider extends ChangeNotifier {
     }
 
     isSearchLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> searchLeagues(String query) async {
+    final trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 3) {
+      leagueSearchResults = [];
+      leagueSearchErrorMessage = null;
+      isLeagueSearchLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    isLeagueSearchLoading = true;
+    leagueSearchErrorMessage = null;
+    notifyListeners();
+
+    try {
+      leagueSearchResults = await _apiService.searchLeagues(trimmedQuery);
+    } catch (e) {
+      leagueSearchErrorMessage = e.toString();
+    }
+
+    isLeagueSearchLoading = false;
     notifyListeners();
   }
 }

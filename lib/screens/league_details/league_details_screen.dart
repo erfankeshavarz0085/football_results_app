@@ -12,16 +12,18 @@ import 'tabs/standings_tab.dart';
 class LeagueDetailsScreen extends StatelessWidget {
   final int leagueId;
   final String leagueName;
+  final LeagueModel? initialLeague;
 
   const LeagueDetailsScreen({
     super.key,
     required this.leagueId,
     required this.leagueName,
+    this.initialLeague,
   });
 
   @override
   Widget build(BuildContext context) {
-    final league = LeagueCatalog.byId(leagueId, leagueName);
+    final league = initialLeague ?? LeagueCatalog.byId(leagueId, leagueName);
     final info = league.toOverviewMap();
 
     return DefaultTabController(

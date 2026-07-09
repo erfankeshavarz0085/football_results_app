@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/fixture_model.dart';
+import '../models/league_model.dart';
 import '../models/standing_model.dart';
 import '../models/team_model.dart';
 import '../utils/constants.dart';
@@ -370,6 +372,64 @@ class ApiService {
       debugPrint('TEAM SEARCH ERROR: $e');
       throw Exception('خطا در جستجوی تیم‌ها: $e');
     }
+  }
+
+  Future<List<LeagueModel>> searchLeagues(String query) async {
+    final trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 3) {
+      return [];
+    }
+
+    final url = Uri.parse(
+      '${AppConstants.baseUrl}/leagues?search=${Uri.encodeQueryComponent(trimmedQuery)}',
+    );
+
+    try {
+      final responseList = await _fetchResponseList(url);
+
+      return responseList.map((json) {
+        final league = json['league'] ?? {};
+        final country = json['country'] ?? {};
+        final seasons = json['seasons'] is List ? json['seasons'] as List : [];
+        final season = _pickLeagueSeason(seasons);
+
+        return LeagueModel(
+          id: league['id'] ?? 0,
+          name: league['name'] ?? 'Unknown league',
+          country: country['name'] ?? 'Unknown',
+          season: season.toString(),
+          apiSeason: season,
+          logoUrl: league['logo'] ?? '',
+          fallbackIcon: Icons.emoji_events_rounded,
+        );
+      }).where((league) => league.id != 0).toList();
+    } catch (e) {
+      debugPrint('LEAGUE SEARCH ERROR: $e');
+      throw Exception('خطا در جستجوی لیگ‌ها: $e');
+    }
+  }
+
+  int _pickLeagueSeason(List seasons) {
+    const latestFreeSeason = 2024;
+
+    if (seasons.isEmpty) {
+      return latestFreeSeason;
+    }
+
+    final years = seasons
+        .whereType<Map>()
+        .map((season) => season['year'])
+        .whereType<int>()
+        .where((year) => year <= latestFreeSeason)
+        .toList();
+
+    if (years.isEmpty) {
+      return latestFreeSeason;
+    }
+
+    years.sort();
+    return years.last;
   }
 
   Future<List<dynamic>> _fetchResponseList(Uri url) async {
