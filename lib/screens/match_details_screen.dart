@@ -71,29 +71,64 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
   }
 
   Widget _matchBody(MatchDetailModel match) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+    return DefaultTabController(
+      length: 3,
       child: Column(
         children: [
-          _scoreCard(match),
-          const SizedBox(height: 20),
-          _infoCard(
-            Icons.stadium,
-            'Venue',
-            '${match.venue} ${match.city}'.trim().isEmpty
-                ? 'Unknown'
-                : '${match.venue} ${match.city}'.trim(),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _scoreCard(match),
           ),
-          _infoCard(
-            Icons.person,
-            'Referee',
-            match.referee.isEmpty ? 'Unknown' : match.referee,
+          const TabBar(
+            indicatorColor: Colors.greenAccent,
+            labelColor: Colors.greenAccent,
+            unselectedLabelColor: Colors.grey,
+            tabs: [
+              Tab(text: 'Summary'),
+              Tab(text: 'Stats'),
+              Tab(text: 'Lineups'),
+            ],
           ),
-          _eventsCard(match.events),
-          _statisticsCard(match.statistics),
-          _lineupsCard(match.lineups),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _summaryTab(match),
+                _statsTab(match.statistics),
+                _lineupsTab(match.lineups),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _summaryTab(MatchDetailModel match) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _matchInfoGrid(match),
+        const SizedBox(height: 12),
+        _eventsCard(match.events),
+      ],
+    );
+  }
+
+  Widget _statsTab(List<MatchStatisticModel> statistics) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _statisticsCard(statistics),
+      ],
+    );
+  }
+
+  Widget _lineupsTab(List<MatchLineupModel> lineups) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _lineupsCard(lineups),
+      ],
     );
   }
 
@@ -138,12 +173,22 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
   }
 
   Widget _eventsCard(List<MatchEventModel> events) {
+    final sortedEvents = [...events]..sort((a, b) {
+        final minuteComparison = a.elapsed.compareTo(b.elapsed);
+
+        if (minuteComparison != 0) {
+          return minuteComparison;
+        }
+
+        return (a.extra ?? 0).compareTo(b.extra ?? 0);
+      });
+
     return _sectionCard(
       title: 'Events',
       icon: Icons.timeline_rounded,
       emptyText: 'No events available',
-      isEmpty: events.isEmpty,
-      children: events.map((event) {
+      isEmpty: sortedEvents.isEmpty,
+      children: sortedEvents.map((event) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(
@@ -187,6 +232,84 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _matchInfoGrid(MatchDetailModel match) {
+    final venue = '${match.venue} ${match.city}'.trim();
+
+    return GridView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 2.45,
+      ),
+      children: [
+        _matchInfoTile(
+          Icons.stadium_rounded,
+          'Venue',
+          venue.isEmpty ? 'Unknown' : venue,
+        ),
+        _matchInfoTile(
+          Icons.person_rounded,
+          'Referee',
+          match.referee.isEmpty ? 'Unknown' : match.referee,
+        ),
+        _matchInfoTile(
+          Icons.sports_soccer_rounded,
+          'Events',
+          match.events.length.toString(),
+        ),
+        _matchInfoTile(
+          Icons.groups_rounded,
+          'Lineups',
+          match.lineups.length.toString(),
+        ),
+      ],
+    );
+  }
+
+  Widget _matchInfoTile(IconData icon, String title, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.greenAccent, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -492,32 +615,6 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
           size: size,
         );
       },
-    );
-  }
-
-  Widget _infoCard(IconData icon, String title, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: const Color(0xff161b22),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.greenAccent),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.grey)),
-                Text(value, style: const TextStyle(color: Colors.white)),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
