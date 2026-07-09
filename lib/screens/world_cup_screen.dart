@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/fixture_model.dart';
+import '../providers/favorite_provider.dart';
 import '../services/api_service.dart';
+import 'match_details_screen.dart';
 
 class WorldCupScreen extends StatefulWidget {
   const WorldCupScreen({super.key});
@@ -98,52 +101,79 @@ class _WorldCupScreenState extends State<WorldCupScreen> {
   }
 
   Widget _matchCard(FixtureModel match) {
+    final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final isFollowed = favoriteProvider.isFollowedMatch(match.id);
     final homeScore = match.homeScore?.toString() ?? '-';
     final awayScore = match.awayScore?.toString() ?? '-';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xff161b22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  match.leagueName,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ),
-              Text(
-                match.status,
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MatchDetailsScreen(fixtureId: match.id),
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(child: _team(match.homeTeam)),
-              Text(
-                '$homeScore - $awayScore',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+        );
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    match.leagueName,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 ),
-              ),
-              Expanded(child: _team(match.awayTeam)),
-            ],
-          ),
-        ],
+                Text(
+                  match.status,
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => favoriteProvider.toggleFollowedMatch(match),
+                  icon: Icon(
+                    isFollowed
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: isFollowed ? Colors.amber : Colors.grey,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(child: _team(match.homeTeam)),
+                Text(
+                  '$homeScore - $awayScore',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Expanded(child: _team(match.awayTeam)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

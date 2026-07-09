@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/fixture_model.dart';
+import '../providers/favorite_provider.dart';
 import '../providers/fixture_provider.dart';
 import 'match_details_screen.dart';
 
@@ -309,6 +310,8 @@ class _LiveScreenState extends State<LiveScreen> {
     FixtureModel fixture, {
     required bool showCompetitionInfo,
   }) {
+    final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final isFollowed = favoriteProvider.isFollowedMatch(fixture.id);
     final homeScore = fixture.homeScore?.toString() ?? '-';
     final awayScore = fixture.awayScore?.toString() ?? '-';
 
@@ -344,6 +347,19 @@ class _LiveScreenState extends State<LiveScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
+                  icon: Icon(
+                    isFollowed
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: isFollowed ? Colors.amber : Colors.grey,
+                    size: 20,
                   ),
                 ),
               ],
@@ -388,6 +404,20 @@ class _LiveScreenState extends State<LiveScreen> {
                 ),
               ),
               Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+              if (!showCompetitionInfo)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
+                  icon: Icon(
+                    isFollowed
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: isFollowed ? Colors.amber : Colors.grey,
+                    size: 20,
+                  ),
+                ),
             ],
           ),
           if (fixture.round.isNotEmpty) ...[

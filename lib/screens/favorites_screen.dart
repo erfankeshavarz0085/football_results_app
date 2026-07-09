@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/league_model.dart';
 import '../providers/favorite_provider.dart';
 import 'league_details/league_details_screen.dart';
+import 'match_details_screen.dart';
 import 'team_details_screen.dart';
 
 class FavoritesScreen extends StatelessWidget {
@@ -15,7 +16,10 @@ class FavoritesScreen extends StatelessWidget {
     final favoriteProvider = Provider.of<FavoriteProvider>(context);
     final favoriteTeams = favoriteProvider.favoriteTeams;
     final favoriteLeagues = favoriteProvider.favoriteLeagues;
-    final hasFavorites = favoriteTeams.isNotEmpty || favoriteLeagues.isNotEmpty;
+    final followedMatches = favoriteProvider.followedMatches;
+    final hasFavorites = favoriteTeams.isNotEmpty ||
+        favoriteLeagues.isNotEmpty ||
+        followedMatches.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
@@ -34,8 +38,20 @@ class FavoritesScreen extends StatelessWidget {
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    _header(favoriteTeams.length, favoriteLeagues.length),
+                    _header(
+                      favoriteTeams.length,
+                      favoriteLeagues.length,
+                      followedMatches.length,
+                    ),
                     const SizedBox(height: 20),
+                    if (followedMatches.isNotEmpty) ...[
+                      _sectionTitle('Followed Matches'),
+                      const SizedBox(height: 12),
+                      ...followedMatches.map((match) {
+                        return _followedMatchCard(context, match);
+                      }),
+                      const SizedBox(height: 10),
+                    ],
                     if (favoriteLeagues.isNotEmpty) ...[
                       _sectionTitle('Favorite Leagues'),
                       const SizedBox(height: 12),
@@ -87,7 +103,7 @@ class FavoritesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Open a team or league page and tap the heart to keep it here.',
+              'Open a team, league or match card and save it for quick access.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, height: 1.4),
             ),
@@ -97,7 +113,7 @@ class FavoritesScreen extends StatelessWidget {
     );
   }
 
-  Widget _header(int teamCount, int leagueCount) {
+  Widget _header(int teamCount, int leagueCount, int matchCount) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -114,7 +130,7 @@ class FavoritesScreen extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              '$teamCount teams and $leagueCount leagues saved for quick access.',
+              '$teamCount teams, $leagueCount leagues and $matchCount matches saved for quick access.',
               style: const TextStyle(color: Colors.white70, height: 1.4),
             ),
           ),
@@ -132,6 +148,131 @@ class FavoritesScreen extends StatelessWidget {
         fontWeight: FontWeight.bold,
       ),
     );
+  }
+
+  Widget _followedMatchCard(BuildContext context, FollowedMatchModel match) {
+    final favoriteProvider = Provider.of<FavoriteProvider>(
+      context,
+      listen: false,
+    );
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MatchDetailsScreen(fixtureId: match.fixtureId),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    match.leagueName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    favoriteProvider.removeFollowedMatch(match.fixtureId);
+                  },
+                  icon: const Icon(
+                    Icons.star_rounded,
+                    color: Colors.amber,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _matchTeam(match.homeTeam, match.homeLogo)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Column(
+                    children: [
+                      Text(
+                        _matchScore(match),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        match.status.isEmpty ? 'Fixture' : match.status,
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(child: _matchTeam(match.awayTeam, match.awayLogo)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _matchTeam(String name, String logo) {
+    return Column(
+      children: [
+        if (logo.isEmpty)
+          const Icon(
+            Icons.shield_rounded,
+            color: Colors.greenAccent,
+            size: 28,
+          )
+        else
+          CachedNetworkImage(
+            imageUrl: logo,
+            width: 34,
+            height: 34,
+            fit: BoxFit.contain,
+            errorWidget: (_, __, ___) => const Icon(
+              Icons.shield_rounded,
+              color: Colors.greenAccent,
+              size: 28,
+            ),
+          ),
+        const SizedBox(height: 6),
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  String _matchScore(FollowedMatchModel match) {
+    if (match.homeScore == null || match.awayScore == null) {
+      return '-';
+    }
+
+    return '${match.homeScore} - ${match.awayScore}';
   }
 
   Widget _favoriteLeagueCard(BuildContext context, LeagueModel league) {

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/fixture_model.dart';
+import '../providers/favorite_provider.dart';
 import '../providers/fixture_provider.dart';
 import 'favorites_screen.dart';
 import 'league_details/league_details_screen.dart';
@@ -81,6 +82,7 @@ class _HomeContentState extends State<HomeContent> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<FixtureProvider>(context);
+    final favoriteProvider = Provider.of<FavoriteProvider>(context);
     final filteredFixtures = _filterFixtures(provider.todayFixtures);
 
     return Scaffold(
@@ -96,6 +98,13 @@ class _HomeContentState extends State<HomeContent> {
                 matchCount: provider.todayFixtures.length,
                 onRefresh: provider.loadTodayFixtures,
               ),
+              if (favoriteProvider.isLoaded &&
+                  (favoriteProvider.favoriteTeams.isNotEmpty ||
+                      favoriteProvider.favoriteLeagues.isNotEmpty ||
+                      favoriteProvider.followedMatches.isNotEmpty)) ...[
+                const SizedBox(height: 16),
+                _favoritesPreview(favoriteProvider),
+              ],
               const SizedBox(height: 16),
               _todaySearchBox(),
               const SizedBox(height: 22),
@@ -241,6 +250,40 @@ class _HomeContentState extends State<HomeContent> {
           style: const TextStyle(color: Colors.grey, fontSize: 12),
         ),
       ],
+    );
+  }
+
+  Widget _favoritesPreview(FavoriteProvider favoriteProvider) {
+    final teamCount = favoriteProvider.favoriteTeams.length;
+    final leagueCount = favoriteProvider.favoriteLeagues.length;
+    final matchCount = favoriteProvider.followedMatches.length;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.star_rounded, color: Colors.amber),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$teamCount teams • $leagueCount leagues • $matchCount matches saved',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+          const Icon(
+            Icons.favorite_rounded,
+            color: Colors.greenAccent,
+            size: 18,
+          ),
+        ],
+      ),
     );
   }
 
@@ -458,6 +501,9 @@ class _HomeContentState extends State<HomeContent> {
     FixtureModel fixture, {
     required bool showCompetitionInfo,
   }) {
+    final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final isFollowed = favoriteProvider.isFollowedMatch(fixture.id);
+
     return InkWell(
       onTap: () => _openMatchDetails(fixture.id),
       borderRadius: BorderRadius.circular(16),
@@ -492,6 +538,19 @@ class _HomeContentState extends State<HomeContent> {
                     ),
                   ),
                 ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
+                  icon: Icon(
+                    isFollowed
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: isFollowed ? Colors.amber : Colors.grey,
+                    size: 20,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -524,6 +583,20 @@ class _HomeContentState extends State<HomeContent> {
                 ),
               ),
               Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+              if (!showCompetitionInfo)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
+                  icon: Icon(
+                    isFollowed
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: isFollowed ? Colors.amber : Colors.grey,
+                    size: 20,
+                  ),
+                ),
             ],
           ),
           if (fixture.round.isNotEmpty) ...[

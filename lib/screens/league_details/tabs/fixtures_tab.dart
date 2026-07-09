@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../../models/fixture_model.dart';
+import '../../../providers/favorite_provider.dart';
 import '../../../services/api_service.dart';
 import '../../match_details_screen.dart';
 
@@ -267,6 +269,9 @@ class _FixturesTabState extends State<FixturesTab> {
   }
 
   Widget _fixtureCard(FixtureModel fixture) {
+    final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final isFollowed = favoriteProvider.isFollowedMatch(fixture.id);
+
     return InkWell(
       onTap: () => _openMatchDetails(fixture.id),
       borderRadius: BorderRadius.circular(16),
@@ -314,6 +319,17 @@ class _FixturesTabState extends State<FixturesTab> {
             ),
           ),
           Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
+            icon: Icon(
+              isFollowed ? Icons.star_rounded : Icons.star_border_rounded,
+              color: isFollowed ? Colors.amber : Colors.grey,
+              size: 20,
+            ),
+          ),
         ],
       ),
       ),

@@ -270,6 +270,9 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
   }
 
   Widget _fixtureRow(FixtureModel fixture) {
+    final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final isFollowed = favoriteProvider.isFollowedMatch(fixture.id);
+
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -314,6 +317,17 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white),
+              ),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
+              icon: Icon(
+                isFollowed ? Icons.star_rounded : Icons.star_border_rounded,
+                color: isFollowed ? Colors.amber : Colors.grey,
+                size: 20,
               ),
             ),
           ],
