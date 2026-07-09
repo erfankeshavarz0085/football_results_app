@@ -180,6 +180,30 @@ class FavoriteProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateMatchAlert({
+    required int fixtureId,
+    bool? kickoffAlert,
+    bool? goalAlert,
+    bool? fullTimeAlert,
+  }) async {
+    final index = _followedMatches.indexWhere((match) {
+      return match.fixtureId == fixtureId;
+    });
+
+    if (index == -1) {
+      return;
+    }
+
+    _followedMatches[index] = _followedMatches[index].copyWith(
+      kickoffAlert: kickoffAlert,
+      goalAlert: goalAlert,
+      fullTimeAlert: fullTimeAlert,
+    );
+
+    await _saveFollowedMatches();
+    notifyListeners();
+  }
+
   Future<void> _saveFavorites() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -235,6 +259,9 @@ class FollowedMatchModel {
   final int? awayScore;
   final String status;
   final String date;
+  final bool kickoffAlert;
+  final bool goalAlert;
+  final bool fullTimeAlert;
 
   FollowedMatchModel({
     required this.fixtureId,
@@ -250,6 +277,9 @@ class FollowedMatchModel {
     required this.awayScore,
     required this.status,
     required this.date,
+    this.kickoffAlert = true,
+    this.goalAlert = true,
+    this.fullTimeAlert = true,
   });
 
   factory FollowedMatchModel.fromFixture(FixtureModel fixture) {
@@ -270,6 +300,31 @@ class FollowedMatchModel {
     );
   }
 
+  FollowedMatchModel copyWith({
+    bool? kickoffAlert,
+    bool? goalAlert,
+    bool? fullTimeAlert,
+  }) {
+    return FollowedMatchModel(
+      fixtureId: fixtureId,
+      leagueId: leagueId,
+      leagueName: leagueName,
+      leagueLogo: leagueLogo,
+      country: country,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      homeLogo: homeLogo,
+      awayLogo: awayLogo,
+      homeScore: homeScore,
+      awayScore: awayScore,
+      status: status,
+      date: date,
+      kickoffAlert: kickoffAlert ?? this.kickoffAlert,
+      goalAlert: goalAlert ?? this.goalAlert,
+      fullTimeAlert: fullTimeAlert ?? this.fullTimeAlert,
+    );
+  }
+
   factory FollowedMatchModel.fromJson(Map<String, dynamic> json) {
     return FollowedMatchModel(
       fixtureId: json['fixtureId'] ?? 0,
@@ -285,6 +340,9 @@ class FollowedMatchModel {
       awayScore: json['awayScore'],
       status: json['status'] ?? '',
       date: json['date'] ?? '',
+      kickoffAlert: json['kickoffAlert'] ?? true,
+      goalAlert: json['goalAlert'] ?? true,
+      fullTimeAlert: json['fullTimeAlert'] ?? true,
     );
   }
 
@@ -303,6 +361,9 @@ class FollowedMatchModel {
       'awayScore': awayScore,
       'status': status,
       'date': date,
+      'kickoffAlert': kickoffAlert,
+      'goalAlert': goalAlert,
+      'fullTimeAlert': fullTimeAlert,
     };
   }
 }

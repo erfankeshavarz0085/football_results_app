@@ -228,7 +228,94 @@ class FavoritesScreen extends StatelessWidget {
                 Expanded(child: _matchTeam(match.awayTeam, match.awayLogo)),
               ],
             ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                _alertChip(
+                  label: 'Kickoff',
+                  isActive: match.kickoffAlert,
+                  onTap: () {
+                    favoriteProvider.updateMatchAlert(
+                      fixtureId: match.fixtureId,
+                      kickoffAlert: !match.kickoffAlert,
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                _alertChip(
+                  label: 'Goals',
+                  isActive: match.goalAlert,
+                  onTap: () {
+                    favoriteProvider.updateMatchAlert(
+                      fixtureId: match.fixtureId,
+                      goalAlert: !match.goalAlert,
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                _alertChip(
+                  label: 'Full time',
+                  isActive: match.fullTimeAlert,
+                  onTap: () {
+                    favoriteProvider.updateMatchAlert(
+                      fixtureId: match.fixtureId,
+                      fullTimeAlert: !match.fullTimeAlert,
+                    );
+                  },
+                ),
+              ],
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _alertChip({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive
+                ? Colors.greenAccent.withValues(alpha: 0.16)
+                : const Color(0xff0d1117),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isActive ? Colors.greenAccent : Colors.white10,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isActive
+                    ? Icons.notifications_active_rounded
+                    : Icons.notifications_off_rounded,
+                color: isActive ? Colors.greenAccent : Colors.grey,
+                size: 14,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isActive ? Colors.greenAccent : Colors.grey,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
