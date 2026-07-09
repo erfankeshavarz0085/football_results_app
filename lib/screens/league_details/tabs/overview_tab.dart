@@ -27,7 +27,7 @@ class OverviewTab extends StatelessWidget {
           title: 'Coming Next',
           children: const [
             Text(
-              'Fixtures, standings, champions history and statistics will be added here.',
+              'Fixtures, standings and champions history are available. More league statistics will be added later.',
               style: TextStyle(color: Colors.grey, height: 1.5),
             ),
           ],
