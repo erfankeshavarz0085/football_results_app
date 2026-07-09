@@ -28,6 +28,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   String query = '';
   SearchMode searchMode = SearchMode.teams;
+  String selectedCountry = 'All';
   Timer? _debounce;
   List<String> recentSearches = [];
   final TextEditingController _searchController = TextEditingController();
@@ -154,7 +155,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _onSearchChanged(String value) {
-    setState(() => query = value);
+    setState(() {
+      query = value;
+      selectedCountry = 'All';
+    });
 
     _debounce?.cancel();
 
@@ -174,6 +178,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _changeMode(SearchMode mode) {
     setState(() {
       searchMode = mode;
+      selectedCountry = 'All';
     });
 
     _debounce?.cancel();
@@ -192,7 +197,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _applyRecentSearch(String value) {
-    setState(() => query = value);
+    setState(() {
+      query = value;
+      selectedCountry = 'All';
+    });
     _searchController.text = value;
     _searchController.selection = TextSelection.collapsed(
       offset: value.length,
@@ -213,7 +221,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _clearQuery() {
     _debounce?.cancel();
-    setState(() => query = '');
+    setState(() {
+      query = '';
+      selectedCountry = 'All';
+    });
     _searchController.clear();
 
     Provider.of<TeamProvider>(
@@ -237,6 +248,11 @@ class _SearchScreenState extends State<SearchScreen> {
     final leagues = trimmedQuery.length < 3
         ? LeagueCatalog.topLeagues
         : provider.leagueSearchResults;
+    final countries = searchMode == SearchMode.teams
+        ? _countriesFromTeams(teams)
+        : _countriesFromLeagues(leagues);
+    final filteredTeams = _filterTeamsByCountry(teams);
+    final filteredLeagues = _filterLeaguesByCountry(leagues);
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
@@ -252,6 +268,10 @@ class _SearchScreenState extends State<SearchScreen> {
           _searchField(),
           const SizedBox(height: 14),
           _modeSelector(),
+          if (countries.length > 1) ...[
+            const SizedBox(height: 12),
+            _countryFilters(countries),
+          ],
           const SizedBox(height: 18),
           if (query.isEmpty && recentSearches.isNotEmpty) ...[
             _recentSearches(),
@@ -266,12 +286,50 @@ class _SearchScreenState extends State<SearchScreen> {
           _searchHint(trimmedQuery),
           const SizedBox(height: 12),
           if (searchMode == SearchMode.teams)
-            _teamResults(provider, trimmedQuery, teams)
+            _teamResults(provider, trimmedQuery, filteredTeams)
           else
-            _leagueResults(provider, trimmedQuery, leagues),
+            _leagueResults(provider, trimmedQuery, filteredLeagues),
         ],
       ),
     );
+  }
+
+  List<TeamModel> _filterTeamsByCountry(List<TeamModel> teams) {
+    if (selectedCountry == 'All') {
+      return teams;
+    }
+
+    return teams.where((team) => team.country == selectedCountry).toList();
+  }
+
+  List<LeagueModel> _filterLeaguesByCountry(List<LeagueModel> leagues) {
+    if (selectedCountry == 'All') {
+      return leagues;
+    }
+
+    return leagues.where((league) => league.country == selectedCountry).toList();
+  }
+
+  List<String> _countriesFromTeams(List<TeamModel> teams) {
+    final countries = teams
+        .map((team) => team.country.trim())
+        .where((country) => country.isNotEmpty)
+        .toSet()
+        .toList();
+
+    countries.sort();
+    return ['All', ...countries];
+  }
+
+  List<String> _countriesFromLeagues(List<LeagueModel> leagues) {
+    final countries = leagues
+        .map((league) => league.country.trim())
+        .where((country) => country.isNotEmpty)
+        .toSet()
+        .toList();
+
+    countries.sort();
+    return ['All', ...countries];
   }
 
   Widget _searchField() {
@@ -341,6 +399,40 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _countryFilters(List<String> countries) {
+    return SizedBox(
+      height: 42,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: countries.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final country = countries[index];
+          final isSelected = selectedCountry == country;
+
+          return ChoiceChip(
+            selected: isSelected,
+            label: Text(country),
+            selectedColor: Colors.greenAccent,
+            backgroundColor: const Color(0xff161b22),
+            labelStyle: TextStyle(
+              color: isSelected ? Colors.black : Colors.white70,
+              fontWeight: FontWeight.bold,
+            ),
+            side: BorderSide(
+              color: isSelected ? Colors.greenAccent : Colors.white10,
+            ),
+            onSelected: (_) {
+              setState(() {
+                selectedCountry = country;
+              });
+            },
+          );
+        },
       ),
     );
   }
