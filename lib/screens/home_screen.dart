@@ -8,6 +8,7 @@ import '../providers/app_settings_provider.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/fixture_provider.dart';
 import '../providers/recent_view_provider.dart';
+import '../widgets/empty_state_card.dart';
 import 'favorites_screen.dart';
 import 'league_details/league_details_screen.dart';
 import 'leagues_screen.dart';
@@ -819,16 +820,16 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Widget _messageBox(String text) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: const Color(0xff161b22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Center(
-        child: Text(text, style: const TextStyle(color: Colors.grey)),
-      ),
+    final isError = text.toLowerCase().contains('api') ||
+        text.toLowerCase().contains('wrong') ||
+        text.toLowerCase().contains('connect') ||
+        text.toLowerCase().contains('timeout');
+
+    return EmptyStateCard(
+      icon: isError ? Icons.cloud_off_rounded : Icons.event_busy_rounded,
+      title: isError ? 'Could not load fixtures' : 'No fixtures',
+      message: text,
+      accentColor: isError ? Colors.redAccent : Colors.greenAccent,
     );
   }
 

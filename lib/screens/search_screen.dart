@@ -10,6 +10,7 @@ import '../models/team_model.dart';
 import '../providers/app_settings_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../providers/team_provider.dart';
+import '../widgets/empty_state_card.dart';
 import 'match_details_screen.dart';
 import 'league_details/league_details_screen.dart';
 import 'team_details_screen.dart';
@@ -852,13 +853,18 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _messageBox(String text) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 60),
-        child: Text(
-          text,
-          style: const TextStyle(color: Colors.grey),
-        ),
+    final isError = text.toLowerCase().contains('api') ||
+        text.toLowerCase().contains('wrong') ||
+        text.toLowerCase().contains('connect') ||
+        text.toLowerCase().contains('timeout');
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 32),
+      child: EmptyStateCard(
+        icon: isError ? Icons.cloud_off_rounded : Icons.search_off_rounded,
+        title: isError ? 'Search unavailable' : 'No results',
+        message: text,
+        accentColor: isError ? Colors.redAccent : Colors.greenAccent,
       ),
     );
   }
