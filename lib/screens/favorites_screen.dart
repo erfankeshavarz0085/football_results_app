@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/league_model.dart';
+import '../providers/app_settings_provider.dart';
 import '../providers/favorite_provider.dart';
 import 'league_details/league_details_screen.dart';
 import 'match_details_screen.dart';
@@ -155,6 +156,7 @@ class FavoritesScreen extends StatelessWidget {
       context,
       listen: false,
     );
+    final settings = Provider.of<AppSettingsProvider>(context);
 
     return InkWell(
       onTap: () {
@@ -228,43 +230,45 @@ class FavoritesScreen extends StatelessWidget {
                 Expanded(child: _matchTeam(match.awayTeam, match.awayLogo)),
               ],
             ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _alertChip(
-                  label: 'Kickoff',
-                  isActive: match.kickoffAlert,
-                  onTap: () {
-                    favoriteProvider.updateMatchAlert(
-                      fixtureId: match.fixtureId,
-                      kickoffAlert: !match.kickoffAlert,
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-                _alertChip(
-                  label: 'Goals',
-                  isActive: match.goalAlert,
-                  onTap: () {
-                    favoriteProvider.updateMatchAlert(
-                      fixtureId: match.fixtureId,
-                      goalAlert: !match.goalAlert,
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-                _alertChip(
-                  label: 'Full time',
-                  isActive: match.fullTimeAlert,
-                  onTap: () {
-                    favoriteProvider.updateMatchAlert(
-                      fixtureId: match.fixtureId,
-                      fullTimeAlert: !match.fullTimeAlert,
-                    );
-                  },
-                ),
-              ],
-            ),
+            if (settings.showMatchAlertControls) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  _alertChip(
+                    label: 'Kickoff',
+                    isActive: match.kickoffAlert,
+                    onTap: () {
+                      favoriteProvider.updateMatchAlert(
+                        fixtureId: match.fixtureId,
+                        kickoffAlert: !match.kickoffAlert,
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _alertChip(
+                    label: 'Goals',
+                    isActive: match.goalAlert,
+                    onTap: () {
+                      favoriteProvider.updateMatchAlert(
+                        fixtureId: match.fixtureId,
+                        goalAlert: !match.goalAlert,
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _alertChip(
+                    label: 'Full time',
+                    isActive: match.fullTimeAlert,
+                    onTap: () {
+                      favoriteProvider.updateMatchAlert(
+                        fixtureId: match.fixtureId,
+                        fullTimeAlert: !match.fullTimeAlert,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

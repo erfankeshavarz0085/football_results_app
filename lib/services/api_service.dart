@@ -13,15 +13,15 @@ import '../models/match_detail_model.dart';
 class ApiService {
   static final Map<String, _CacheItem<List<FixtureModel>>> _fixtureCache = {};
   static final Map<String, _CacheItem<List<StandingModel>>> _standingsCache = {};
+  static DateTime? _lastRequestAt;
+  static Future<void> _requestQueue = Future.value();
 
   Map<String, String> get _headers => {
         'x-apisports-key': AppConstants.apiKey,
       };
 
   Future<List<FixtureModel>> getTodayFixtures() async {
-    final now = DateTime.now();
-    final date =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final date = _todayDate();
 
     final url = Uri.parse(
       '${AppConstants.baseUrl}/fixtures?date=$date&timezone=Asia/Tehran',
@@ -102,10 +102,25 @@ class ApiService {
 
     debugPrint('CACHE MISS: $cacheKey');
 
-    final data = await _fetchFixtures(url);
-    _fixtureCache[cacheKey] = _CacheItem(data: data);
+    try {
+      final data = await _fetchFixtures(url);
+      _fixtureCache[cacheKey] = _CacheItem(data: data);
 
-    return data;
+      return data;
+    } catch (e) {
+      if (cached != null) {
+        debugPrint('CACHE STALE FALLBACK: $cacheKey');
+        return cached.data;
+      }
+
+      rethrow;
+    }
+  }
+
+  String _todayDate() {
+    final now = DateTime.now();
+
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
   Future<List<StandingModel>> _fetchStandingsWithCache({
@@ -122,10 +137,19 @@ class ApiService {
 
     debugPrint('CACHE MISS: $cacheKey');
 
-    final data = await _fetchStandings(url);
-    _standingsCache[cacheKey] = _CacheItem(data: data);
+    try {
+      final data = await _fetchStandings(url);
+      _standingsCache[cacheKey] = _CacheItem(data: data);
 
-    return data;
+      return data;
+    } catch (e) {
+      if (cached != null) {
+        debugPrint('CACHE STALE FALLBACK: $cacheKey');
+        return cached.data;
+      }
+
+      rethrow;
+    }
   }
 
   Future<List<FixtureModel>> _fetchFixtures(Uri url) async {
@@ -139,9 +163,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        if (data['errors'] != null && data['errors'].toString() != '{}') {
-          debugPrint('API ERRORS: ${data['errors']}');
-        }
+        _throwIfApiErrors(data['errors']);
 
         final List fixtures = data['response'] ?? [];
 
@@ -166,9 +188,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        if (data['errors'] != null && data['errors'].toString() != '{}') {
-          debugPrint('API ERRORS: ${data['errors']}');
-        }
+        _throwIfApiErrors(data['errors']);
 
         final List responseList = data['response'] ?? [];
 
@@ -445,9 +465,7 @@ class ApiService {
 
     final data = jsonDecode(response.body);
 
-    if (data['errors'] != null && data['errors'].toString() != '{}') {
-      debugPrint('API ERRORS: ${data['errors']}');
-    }
+    _throwIfApiErrors(data['errors']);
 
     return data['response'] ?? [];
   }
@@ -465,10 +483,14 @@ class ApiService {
   }
 
   Future<http.Response> _getWithRetry(Uri url) async {
+    _ensureApiEnabled();
+
     const maxAttempts = 3;
 
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
+        await _waitForRequestSlot();
+
         return await http
             .get(url, headers: _headers)
             .timeout(const Duration(seconds: 15));
@@ -483,6 +505,75 @@ class ApiService {
     }
 
     throw Exception('API request failed');
+  }
+
+  void _ensureApiEnabled() {
+    if (!AppConstants.apiEnabled) {
+      throw Exception(
+        'API is disabled in .env. Set API_ENABLED=true only when you want to use real API requests.',
+      );
+    }
+
+    if (AppConstants.apiKey.isEmpty) {
+      throw Exception('API key is missing. Add API_KEY to .env.');
+    }
+  }
+
+  Future<void> _waitForRequestSlot() {
+    final nextRequest = _requestQueue.then((_) async {
+      final interval = Duration(milliseconds: AppConstants.apiRequestIntervalMs);
+      final lastRequestAt = _lastRequestAt;
+
+      if (lastRequestAt != null) {
+        final elapsed = DateTime.now().difference(lastRequestAt);
+
+        if (elapsed < interval) {
+          await Future.delayed(interval - elapsed);
+        }
+      }
+
+      _lastRequestAt = DateTime.now();
+    });
+
+    _requestQueue = nextRequest.catchError((_) {});
+
+    return nextRequest;
+  }
+
+  void _throwIfApiErrors(dynamic errors) {
+    if (errors == null) {
+      return;
+    }
+
+    if (errors is Map && errors.isEmpty) {
+      return;
+    }
+
+    if (errors is List && errors.isEmpty) {
+      return;
+    }
+
+    if (errors.toString() == '{}' || errors.toString() == '[]') {
+      return;
+    }
+
+    debugPrint('API ERRORS: $errors');
+
+    final message = errors.toString().toLowerCase();
+
+    if (message.contains('suspended')) {
+      throw Exception(
+        'API account is suspended. Disable API requests or update your API key from the API-Football dashboard.',
+      );
+    }
+
+    if (message.contains('free plans') || message.contains('plan')) {
+      throw Exception(
+        'This API endpoint or season is not available on the free plan.',
+      );
+    }
+
+    throw Exception('API returned an error: $errors');
   }
 }
 

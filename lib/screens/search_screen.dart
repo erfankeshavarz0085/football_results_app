@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/league_model.dart';
 import '../models/team_model.dart';
+import '../providers/app_settings_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../providers/team_provider.dart';
 import 'match_details_screen.dart';
@@ -230,6 +231,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final provider = Provider.of<TeamProvider>(context);
     final recentViewProvider = Provider.of<RecentViewProvider>(context);
+    final settings = Provider.of<AppSettingsProvider>(context);
     final trimmedQuery = query.trim();
     final teams = trimmedQuery.length < 3 ? popularTeams : provider.searchResults;
     final leagues = trimmedQuery.length < 3
@@ -255,7 +257,9 @@ class _SearchScreenState extends State<SearchScreen> {
             _recentSearches(),
             const SizedBox(height: 20),
           ],
-          if (query.isEmpty && recentViewProvider.items.isNotEmpty) ...[
+          if (settings.showRecentlyViewedInSearch &&
+              query.isEmpty &&
+              recentViewProvider.items.isNotEmpty) ...[
             _recentViews(recentViewProvider),
             const SizedBox(height: 20),
           ],

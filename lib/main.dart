@@ -7,6 +7,7 @@ import 'providers/fixture_provider.dart';
 import 'providers/league_provider.dart';
 import 'providers/match_detail_provider.dart';
 import 'providers/recent_view_provider.dart';
+import 'providers/app_settings_provider.dart';
 import 'providers/team_provider.dart';
 
 import 'screens/splash_screen.dart';
@@ -61,6 +62,10 @@ class FootballApp extends StatelessWidget {
 
         ChangeNotifierProvider(
           create: (_) => RecentViewProvider(),
+        ),
+
+        ChangeNotifierProvider(
+          create: (_) => AppSettingsProvider(),
         ),
 
       ],

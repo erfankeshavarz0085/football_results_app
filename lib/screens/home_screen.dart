@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/fixture_model.dart';
+import '../providers/app_settings_provider.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/fixture_provider.dart';
 import '../providers/recent_view_provider.dart';
@@ -13,6 +14,7 @@ import 'leagues_screen.dart';
 import 'live_screen.dart';
 import 'match_details_screen.dart';
 import 'search_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -84,6 +86,7 @@ class _HomeContentState extends State<HomeContent> {
   Widget build(BuildContext context) {
     final provider = Provider.of<FixtureProvider>(context);
     final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final settings = Provider.of<AppSettingsProvider>(context);
     final filteredFixtures = _filterFixtures(provider.todayFixtures);
 
     return Scaffold(
@@ -99,7 +102,8 @@ class _HomeContentState extends State<HomeContent> {
                 matchCount: provider.todayFixtures.length,
                 onRefresh: provider.loadTodayFixtures,
               ),
-              if (favoriteProvider.isLoaded &&
+              if (settings.showFavoritesOnHome &&
+                  favoriteProvider.isLoaded &&
                   (favoriteProvider.favoriteTeams.isNotEmpty ||
                       favoriteProvider.favoriteLeagues.isNotEmpty ||
                       favoriteProvider.followedMatches.isNotEmpty)) ...[
@@ -197,7 +201,20 @@ class _HomeContentState extends State<HomeContent> {
             onPressed: onRefresh,
             icon: const Icon(Icons.refresh_rounded, color: Colors.greenAccent),
           ),
+          IconButton(
+            onPressed: _openSettings,
+            icon: const Icon(Icons.settings_rounded, color: Colors.greenAccent),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SettingsScreen(),
       ),
     );
   }
