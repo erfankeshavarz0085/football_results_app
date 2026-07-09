@@ -94,13 +94,14 @@ class _HomeContentState extends State<HomeContent> {
       body: SafeArea(
         child: RefreshIndicator(
           color: Colors.greenAccent,
-          onRefresh: provider.loadTodayFixtures,
+          onRefresh: provider.refreshSelectedDate,
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
               _topHeader(
                 matchCount: provider.todayFixtures.length,
-                onRefresh: provider.loadTodayFixtures,
+                selectedDate: provider.selectedDate,
+                onRefresh: provider.refreshSelectedDate,
               ),
               if (settings.showFavoritesOnHome &&
                   favoriteProvider.isLoaded &&
@@ -111,10 +112,14 @@ class _HomeContentState extends State<HomeContent> {
                 _favoritesPreview(favoriteProvider),
               ],
               const SizedBox(height: 16),
+              _dateSelector(provider),
+              const SizedBox(height: 16),
               _todaySearchBox(),
               const SizedBox(height: 22),
               _sectionHeader(
-                title: "Today's Fixtures",
+                title: provider.isSelectedDateToday
+                    ? "Today's Fixtures"
+                    : 'Fixtures',
                 subtitle: searchQuery.isEmpty ? 'Grouped by league' : 'Search results',
               ),
               const SizedBox(height: 12),
@@ -155,10 +160,10 @@ class _HomeContentState extends State<HomeContent> {
 
   Widget _topHeader({
     required int matchCount,
+    required DateTime selectedDate,
     required VoidCallback onRefresh,
   }) {
-    final now = DateTime.now();
-    final formattedDate = DateFormat('EEEE • d MMMM').format(now);
+    final formattedDate = DateFormat('EEEE • d MMMM').format(selectedDate);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -226,7 +231,7 @@ class _HomeContentState extends State<HomeContent> {
       },
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        hintText: 'Search today fixtures...',
+        hintText: 'Search fixtures...',
         hintStyle: const TextStyle(color: Colors.grey),
         prefixIcon: const Icon(Icons.search_rounded, color: Colors.greenAccent),
         suffixIcon: searchQuery.isNotEmpty
@@ -243,6 +248,59 @@ class _HomeContentState extends State<HomeContent> {
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
         ),
+      ),
+    );
+  }
+
+  Widget _dateSelector(FixtureProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: provider.loadPreviousDay,
+            icon: const Icon(
+              Icons.chevron_left_rounded,
+              color: Colors.greenAccent,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  DateFormat('EEE, d MMM yyyy').format(provider.selectedDate),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  provider.isSelectedDateToday ? 'Today' : 'Selected date',
+                  style: const TextStyle(color: Colors.grey, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed:
+                provider.isSelectedDateToday ? null : provider.loadTodayFixtures,
+            child: const Text('Today'),
+          ),
+          IconButton(
+            onPressed: provider.loadNextDay,
+            icon: const Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.greenAccent,
+            ),
+          ),
+        ],
       ),
     );
   }

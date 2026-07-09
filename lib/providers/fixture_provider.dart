@@ -48,6 +48,10 @@ class FixtureProvider extends ChangeNotifier {
     return loadFixturesForDate(selectedDate.add(const Duration(days: 1)));
   }
 
+  Future<void> refreshSelectedDate() {
+    return loadFixturesForDate(selectedDate);
+  }
+
   bool get isSelectedDateToday {
     final now = DateTime.now();
 
