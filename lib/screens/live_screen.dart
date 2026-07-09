@@ -7,6 +7,7 @@ import '../providers/favorite_provider.dart';
 import '../providers/fixture_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../widgets/empty_state_card.dart';
+import '../widgets/loading_widget.dart';
 import 'match_details_screen.dart';
 
 class LiveScreen extends StatefulWidget {
@@ -61,11 +62,8 @@ class _LiveScreenState extends State<LiveScreen> {
               _sectionHeader(),
               const SizedBox(height: 12),
               if (provider.isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 80),
-                  child: Center(
-                    child: CircularProgressIndicator(color: Colors.greenAccent),
-                  ),
+                const FixtureSkeletonList(
+                  accentColor: Colors.redAccent,
                 )
               else if (provider.errorMessage != null)
                 _messageBox(provider.errorMessage!)

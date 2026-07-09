@@ -9,6 +9,7 @@ import '../providers/favorite_provider.dart';
 import '../providers/fixture_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../widgets/empty_state_card.dart';
+import '../widgets/loading_widget.dart';
 import 'favorites_screen.dart';
 import 'league_details/league_details_screen.dart';
 import 'leagues_screen.dart';
@@ -129,12 +130,7 @@ class _HomeContentState extends State<HomeContent> {
               ),
               const SizedBox(height: 12),
               if (provider.isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 80),
-                  child: Center(
-                    child: CircularProgressIndicator(color: Colors.greenAccent),
-                  ),
-                )
+                const FixtureSkeletonList()
               else if (provider.errorMessage != null)
                 _messageBox(provider.errorMessage!)
               else if (provider.todayFixtures.isEmpty)
