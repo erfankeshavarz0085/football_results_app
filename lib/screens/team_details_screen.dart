@@ -123,7 +123,11 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                 ),
               ),
               IconButton(
-                onPressed: () => favoriteProvider.toggleFavorite(team.id),
+                onPressed: () {
+                  favoriteProvider.toggleFavoriteTeam(
+                    FavoriteTeamModel.fromTeam(team),
+                  );
+                },
                 icon: Icon(
                   isFavorite
                       ? Icons.favorite_rounded

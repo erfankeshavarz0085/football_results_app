@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../models/standing_model.dart';
 import '../../../providers/fixture_provider.dart';
+import '../../team_details_screen.dart';
 
 class StandingsTab extends StatefulWidget {
   final int leagueId;
@@ -116,7 +117,7 @@ class _StandingsTabState extends State<StandingsTab> {
 
                     final team = standings[index];
 
-                    return _standingCard(team);
+                    return _standingCard(context, team);
 
                   },
                 ),
@@ -130,9 +131,23 @@ class _StandingsTabState extends State<StandingsTab> {
 
 
 
-  Widget _standingCard(StandingModel team) {
+  Widget _standingCard(BuildContext context, StandingModel team) {
 
-    return Container(
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TeamDetailsScreen(
+              teamId: team.teamId,
+              fallbackName: team.teamName,
+              fallbackLogo: team.teamLogo,
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
 
       margin: const EdgeInsets.only(
         bottom: 12,
@@ -396,6 +411,7 @@ class _StandingsTabState extends State<StandingsTab> {
 
       ),
 
+      ),
     );
 
   }

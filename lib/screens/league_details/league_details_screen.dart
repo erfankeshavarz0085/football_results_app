@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/league_model.dart';
+import '../../providers/favorite_provider.dart';
 import 'tabs/fixtures_tab.dart';
 import 'tabs/history_tab.dart';
 import 'tabs/overview_tab.dart';
@@ -29,7 +31,7 @@ class LeagueDetailsScreen extends StatelessWidget {
         body: SafeArea(
           child: Column(
             children: [
-              _header(context, info),
+              _header(context, league, info),
               const TabBar(
                 indicatorColor: Colors.greenAccent,
                 labelColor: Colors.greenAccent,
@@ -66,7 +68,14 @@ class LeagueDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _header(BuildContext context, Map<String, dynamic> info) {
+  Widget _header(
+    BuildContext context,
+    LeagueModel league,
+    Map<String, dynamic> info,
+  ) {
+    final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final isFavorite = favoriteProvider.isFavoriteLeague(league.id);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -84,6 +93,15 @@ class LeagueDetailsScreen extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
               ),
               const Spacer(),
+              IconButton(
+                onPressed: () => favoriteProvider.toggleFavoriteLeague(league),
+                icon: Icon(
+                  isFavorite
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  color: isFavorite ? Colors.redAccent : Colors.greenAccent,
+                ),
+              ),
             ],
           ),
           Container(
