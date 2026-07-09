@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/fixture_model.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/fixture_provider.dart';
+import '../providers/recent_view_provider.dart';
 import 'favorites_screen.dart';
 import 'league_details/league_details_screen.dart';
 import 'leagues_screen.dart';
@@ -505,7 +506,13 @@ class _HomeContentState extends State<HomeContent> {
     final isFollowed = favoriteProvider.isFollowedMatch(fixture.id);
 
     return InkWell(
-      onTap: () => _openMatchDetails(fixture.id),
+      onTap: () {
+        Provider.of<RecentViewProvider>(
+          context,
+          listen: false,
+        ).addMatch(fixture);
+        _openMatchDetails(fixture.id);
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
       margin: const EdgeInsets.only(bottom: 10),

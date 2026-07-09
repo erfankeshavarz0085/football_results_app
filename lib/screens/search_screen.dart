@@ -7,7 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/league_model.dart';
 import '../models/team_model.dart';
+import '../providers/recent_view_provider.dart';
 import '../providers/team_provider.dart';
+import 'match_details_screen.dart';
 import 'league_details/league_details_screen.dart';
 import 'team_details_screen.dart';
 
@@ -227,6 +229,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TeamProvider>(context);
+    final recentViewProvider = Provider.of<RecentViewProvider>(context);
     final trimmedQuery = query.trim();
     final teams = trimmedQuery.length < 3 ? popularTeams : provider.searchResults;
     final leagues = trimmedQuery.length < 3
@@ -250,6 +253,10 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(height: 18),
           if (query.isEmpty && recentSearches.isNotEmpty) ...[
             _recentSearches(),
+            const SizedBox(height: 20),
+          ],
+          if (query.isEmpty && recentViewProvider.items.isNotEmpty) ...[
+            _recentViews(recentViewProvider),
             const SizedBox(height: 20),
           ],
           _searchHint(trimmedQuery),
@@ -373,6 +380,148 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  Widget _recentViews(RecentViewProvider recentViewProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Recently viewed',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: recentViewProvider.clear,
+              child: const Text('Clear'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...recentViewProvider.items.take(6).map(_recentViewCard),
+      ],
+    );
+  }
+
+  Widget _recentViewCard(RecentViewItem item) {
+    return InkWell(
+      onTap: () => _openRecentView(item),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            _logoBox(
+              imageUrl: item.imageUrl,
+              fallbackIcon: _recentViewIcon(item.type),
+              useWhiteBackground: item.type == RecentViewType.league,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_recentViewLabel(item.type)} • ${item.subtitle}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.greenAccent,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openRecentView(RecentViewItem item) {
+    if (item.type == RecentViewType.match) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MatchDetailsScreen(fixtureId: item.id),
+        ),
+      );
+      return;
+    }
+
+    if (item.type == RecentViewType.team) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TeamDetailsScreen(
+            teamId: item.id,
+            fallbackName: item.title,
+            fallbackLogo: item.imageUrl,
+          ),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LeagueDetailsScreen(
+          leagueId: item.id,
+          leagueName: item.title,
+          initialLeague: LeagueModel(
+            id: item.id,
+            name: item.title,
+            country: item.subtitle,
+            season: (item.season ?? 2024).toString(),
+            apiSeason: item.season ?? 2024,
+            logoUrl: item.imageUrl,
+            fallbackIcon: Icons.emoji_events_rounded,
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _recentViewIcon(RecentViewType type) {
+    return switch (type) {
+      RecentViewType.match => Icons.sports_soccer_rounded,
+      RecentViewType.team => Icons.shield_rounded,
+      RecentViewType.league => Icons.emoji_events_rounded,
+    };
+  }
+
+  String _recentViewLabel(RecentViewType type) {
+    return switch (type) {
+      RecentViewType.match => 'Match',
+      RecentViewType.team => 'Team',
+      RecentViewType.league => 'League',
+    };
+  }
+
   Widget _searchHint(String trimmedQuery) {
     final text = switch (searchMode) {
       SearchMode.teams => trimmedQuery.length < 3
@@ -447,6 +596,10 @@ class _SearchScreenState extends State<SearchScreen> {
     return InkWell(
       onTap: () {
         _saveRecentSearch(team.name);
+        Provider.of<RecentViewProvider>(
+          context,
+          listen: false,
+        ).addTeamModel(team);
 
         Navigator.push(
           context,
@@ -510,6 +663,10 @@ class _SearchScreenState extends State<SearchScreen> {
     return InkWell(
       onTap: () {
         _saveRecentSearch(league.name);
+        Provider.of<RecentViewProvider>(
+          context,
+          listen: false,
+        ).addLeague(league);
 
         Navigator.push(
           context,

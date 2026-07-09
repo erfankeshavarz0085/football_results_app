@@ -4,12 +4,13 @@ import 'package:provider/provider.dart';
 
 import '../../models/league_model.dart';
 import '../../providers/favorite_provider.dart';
+import '../../providers/recent_view_provider.dart';
 import 'tabs/fixtures_tab.dart';
 import 'tabs/history_tab.dart';
 import 'tabs/overview_tab.dart';
 import 'tabs/standings_tab.dart';
 
-class LeagueDetailsScreen extends StatelessWidget {
+class LeagueDetailsScreen extends StatefulWidget {
   final int leagueId;
   final String leagueName;
   final LeagueModel? initialLeague;
@@ -22,9 +23,29 @@ class LeagueDetailsScreen extends StatelessWidget {
   });
 
   @override
+  State<LeagueDetailsScreen> createState() => _LeagueDetailsScreenState();
+}
+
+class _LeagueDetailsScreenState extends State<LeagueDetailsScreen> {
+  bool _didSaveRecentView = false;
+
+  @override
   Widget build(BuildContext context) {
-    final league = initialLeague ?? LeagueCatalog.byId(leagueId, leagueName);
+    final league = widget.initialLeague ??
+        LeagueCatalog.byId(widget.leagueId, widget.leagueName);
     final info = league.toOverviewMap();
+
+    if (!_didSaveRecentView) {
+      _didSaveRecentView = true;
+      Future.microtask(() {
+        if (!mounted) return;
+
+        Provider.of<RecentViewProvider>(
+          context,
+          listen: false,
+        ).addLeague(league);
+      });
+    }
 
     return DefaultTabController(
       length: 4,
@@ -50,16 +71,19 @@ class LeagueDetailsScreen extends StatelessWidget {
                   children: [
                     OverviewTab(leagueInfo: info),
                     FixturesTab(
-                      leagueId: leagueId,
-                      leagueName: leagueName,
+                      leagueId: widget.leagueId,
+                      leagueName: widget.leagueName,
                       season: league.apiSeason,
                     ),
                     StandingsTab(
-                      leagueId: leagueId,
-                      leagueName: leagueName,
+                      leagueId: widget.leagueId,
+                      leagueName: widget.leagueName,
                       season: league.apiSeason,
                     ),
-                    HistoryTab(leagueId: leagueId, leagueName: leagueName),
+                    HistoryTab(
+                      leagueId: widget.leagueId,
+                      leagueName: widget.leagueName,
+                    ),
                   ],
                 ),
               ),

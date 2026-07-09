@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../models/fixture_model.dart';
 import '../../../providers/favorite_provider.dart';
+import '../../../providers/recent_view_provider.dart';
 import '../../../services/api_service.dart';
 import '../../match_details_screen.dart';
 
@@ -273,7 +274,13 @@ class _FixturesTabState extends State<FixturesTab> {
     final isFollowed = favoriteProvider.isFollowedMatch(fixture.id);
 
     return InkWell(
-      onTap: () => _openMatchDetails(fixture.id),
+      onTap: () {
+        Provider.of<RecentViewProvider>(
+          context,
+          listen: false,
+        ).addMatch(fixture);
+        _openMatchDetails(fixture.id);
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
       margin: const EdgeInsets.only(bottom: 10),

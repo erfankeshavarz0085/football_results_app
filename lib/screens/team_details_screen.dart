@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/fixture_model.dart';
 import '../models/team_model.dart';
 import '../providers/favorite_provider.dart';
+import '../providers/recent_view_provider.dart';
 import '../providers/team_provider.dart';
 import 'match_details_screen.dart';
 
@@ -35,6 +36,16 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
         context,
         listen: false,
       ).loadTeamDetails(widget.teamId);
+
+      Provider.of<RecentViewProvider>(
+        context,
+        listen: false,
+      ).addTeam(
+        id: widget.teamId,
+        name: widget.fallbackName,
+        logo: widget.fallbackLogo,
+        country: '',
+      );
     });
   }
 
@@ -275,6 +286,10 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
 
     return InkWell(
       onTap: () {
+        Provider.of<RecentViewProvider>(
+          context,
+          listen: false,
+        ).addMatch(fixture);
         Navigator.push(
           context,
           MaterialPageRoute(

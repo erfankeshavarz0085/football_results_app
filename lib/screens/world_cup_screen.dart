@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/fixture_model.dart';
 import '../providers/favorite_provider.dart';
+import '../providers/recent_view_provider.dart';
 import '../services/api_service.dart';
 import 'match_details_screen.dart';
 
@@ -108,6 +109,10 @@ class _WorldCupScreenState extends State<WorldCupScreen> {
 
     return InkWell(
       onTap: () {
+        Provider.of<RecentViewProvider>(
+          context,
+          listen: false,
+        ).addMatch(match);
         Navigator.push(
           context,
           MaterialPageRoute(
