@@ -20,6 +20,14 @@ class FixtureProvider extends ChangeNotifier {
 
   final Map<int, List<StandingModel>> standingsByLeague = {};
 
+  bool get isUsingDemoFixtures {
+    return todayFixtures.any((fixture) => fixture.id < 0);
+  }
+
+  bool get isUsingDemoLiveFixtures {
+    return liveFixtures.any((fixture) => fixture.id < 0);
+  }
+
   Future<void> loadTodayFixtures() async {
     selectedDate = DateTime.now();
     await loadFixturesForDate(selectedDate);

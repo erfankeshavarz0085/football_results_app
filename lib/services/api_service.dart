@@ -9,6 +9,7 @@ import '../models/league_model.dart';
 import '../models/standing_model.dart';
 import '../models/team_model.dart';
 import '../utils/constants.dart';
+import '../utils/demo_football_data.dart';
 import '../models/match_detail_model.dart';
 
 class ApiService {
@@ -135,12 +136,74 @@ class ApiService {
         return persistentCache.data;
       }
 
+      final demoData = _demoFixturesForCache(cacheKey);
+
+      if (demoData.isNotEmpty) {
+        debugPrint('DEMO FIXTURE FALLBACK: $cacheKey');
+        return demoData;
+      }
+
       rethrow;
     }
   }
 
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  List<FixtureModel> _demoFixturesForCache(String cacheKey) {
+    if (!AppConstants.demoFallbackEnabled) {
+      return const [];
+    }
+
+    if (cacheKey == 'live_fixtures') {
+      return DemoFootballData.liveFixtures();
+    }
+
+    if (cacheKey == 'world_cup_2022') {
+      return DemoFootballData.worldCupFixtures();
+    }
+
+    if (cacheKey.startsWith('today_')) {
+      final date = DateTime.tryParse(cacheKey.replaceFirst('today_', ''));
+
+      if (date != null) {
+        return DemoFootballData.fixturesForDate(date);
+      }
+    }
+
+    final leagueMatch = RegExp(r'^league_(\d+)_season_').firstMatch(cacheKey);
+
+    if (leagueMatch != null) {
+      final leagueId = int.tryParse(leagueMatch.group(1) ?? '');
+
+      if (leagueId != null) {
+        return DemoFootballData.leagueFixtures(leagueId);
+      }
+    }
+
+    return const [];
+  }
+
+  List<StandingModel> _demoStandingsForCache(String cacheKey) {
+    if (!AppConstants.demoFallbackEnabled) {
+      return const [];
+    }
+
+    final leagueMatch =
+        RegExp(r'^standings_(\d+)_season_').firstMatch(cacheKey);
+
+    if (leagueMatch == null) {
+      return const [];
+    }
+
+    final leagueId = int.tryParse(leagueMatch.group(1) ?? '');
+
+    if (leagueId == null) {
+      return const [];
+    }
+
+    return DemoFootballData.standingsForLeague(leagueId);
   }
 
   Future<List<StandingModel>> _fetchStandingsWithCache({
@@ -181,6 +244,13 @@ class ApiService {
         debugPrint('PERSISTENT CACHE STALE FALLBACK: $cacheKey');
         _standingsCache[cacheKey] = _CacheItem(data: persistentCache.data);
         return persistentCache.data;
+      }
+
+      final demoData = _demoStandingsForCache(cacheKey);
+
+      if (demoData.isNotEmpty) {
+        debugPrint('DEMO STANDINGS FALLBACK: $cacheKey');
+        return demoData;
       }
 
       rethrow;
@@ -371,7 +441,7 @@ class ApiService {
       final fixtureList = await _fetchResponseList(fixtureUrl);
 
       if (fixtureList.isEmpty) {
-        return null;
+        return DemoFootballData.matchDetailsForFixture(fixtureId);
       }
 
       final detailResults = await Future.wait([
@@ -400,6 +470,14 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('MATCH DETAIL ERROR: $e');
+
+      final demoDetail = DemoFootballData.matchDetailsForFixture(fixtureId);
+
+      if (AppConstants.demoFallbackEnabled && demoDetail != null) {
+        debugPrint('DEMO MATCH DETAIL FALLBACK: $fixtureId');
+        return demoDetail;
+      }
+
       throw Exception(
         'خطا در دریافت جزئیات بازی: $e',
       );

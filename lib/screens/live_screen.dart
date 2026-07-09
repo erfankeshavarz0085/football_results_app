@@ -52,6 +52,10 @@ class _LiveScreenState extends State<LiveScreen> {
                 liveCount: provider.liveFixtures.length,
                 onRefresh: provider.loadLiveFixtures,
               ),
+              if (provider.isUsingDemoLiveFixtures) ...[
+                const SizedBox(height: 12),
+                _demoBanner(),
+              ],
               const SizedBox(height: 22),
               _sectionHeader(),
               const SizedBox(height: 12),
@@ -483,6 +487,33 @@ class _LiveScreenState extends State<LiveScreen> {
       ),
       child: Center(
         child: Text(text, style: const TextStyle(color: Colors.grey)),
+      ),
+    );
+  }
+
+  Widget _demoBanner() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amberAccent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.25)),
+      ),
+      child: const Row(
+        children: [
+          Icon(
+            Icons.offline_bolt_rounded,
+            color: Colors.amberAccent,
+            size: 20,
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Demo live data is shown because the real API is unavailable.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+        ],
       ),
     );
   }
