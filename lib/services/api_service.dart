@@ -542,6 +542,14 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('TEAM DETAILS ERROR: $e');
+
+      final demoDetails = DemoFootballData.teamDetailsForTeam(teamId);
+
+      if (await _isDemoFallbackEnabled() && demoDetails != null) {
+        debugPrint('DEMO TEAM DETAILS FALLBACK: $teamId');
+        return demoDetails;
+      }
+
       throw Exception('خطا در دریافت اطلاعات تیم: $e');
     }
   }
@@ -605,6 +613,12 @@ class ApiService {
       return responseList.map((json) => TeamModel.fromJson(json)).toList();
     } catch (e) {
       debugPrint('TEAM SEARCH ERROR: $e');
+
+      if (await _isDemoFallbackEnabled()) {
+        debugPrint('DEMO TEAM SEARCH FALLBACK: $trimmedQuery');
+        return DemoFootballData.searchTeams(trimmedQuery);
+      }
+
       throw Exception('خطا در جستجوی تیم‌ها: $e');
     }
   }
@@ -641,6 +655,12 @@ class ApiService {
       }).where((league) => league.id != 0).toList();
     } catch (e) {
       debugPrint('LEAGUE SEARCH ERROR: $e');
+
+      if (await _isDemoFallbackEnabled()) {
+        debugPrint('DEMO LEAGUE SEARCH FALLBACK: $trimmedQuery');
+        return DemoFootballData.searchLeagues(trimmedQuery);
+      }
+
       throw Exception('خطا در جستجوی لیگ‌ها: $e');
     }
   }

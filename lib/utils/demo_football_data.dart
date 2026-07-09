@@ -1,8 +1,139 @@
 import '../models/fixture_model.dart';
+import '../models/league_model.dart';
 import '../models/match_detail_model.dart';
 import '../models/standing_model.dart';
+import '../models/team_model.dart';
 
 class DemoFootballData {
+  static List<TeamModel> teams() {
+    return [
+      _team(
+        id: 40,
+        name: 'Liverpool',
+        country: 'England',
+        founded: 1892,
+        venueName: 'Anfield',
+        venueCity: 'Liverpool',
+        venueCapacity: 61276,
+      ),
+      _team(
+        id: 33,
+        name: 'Manchester United',
+        country: 'England',
+        founded: 1878,
+        venueName: 'Old Trafford',
+        venueCity: 'Manchester',
+        venueCapacity: 74310,
+      ),
+      _team(
+        id: 42,
+        name: 'Arsenal',
+        country: 'England',
+        founded: 1886,
+        venueName: 'Emirates Stadium',
+        venueCity: 'London',
+        venueCapacity: 60383,
+      ),
+      _team(
+        id: 541,
+        name: 'Real Madrid',
+        country: 'Spain',
+        founded: 1902,
+        venueName: 'Santiago Bernabeu',
+        venueCity: 'Madrid',
+        venueCapacity: 81044,
+      ),
+      _team(
+        id: 529,
+        name: 'Barcelona',
+        country: 'Spain',
+        founded: 1899,
+        venueName: 'Camp Nou',
+        venueCity: 'Barcelona',
+        venueCapacity: 99354,
+      ),
+      _team(
+        id: 157,
+        name: 'Bayern Munich',
+        country: 'Germany',
+        founded: 1900,
+        venueName: 'Allianz Arena',
+        venueCity: 'Munich',
+        venueCapacity: 75000,
+      ),
+      _team(
+        id: 85,
+        name: 'Paris Saint-Germain',
+        country: 'France',
+        founded: 1970,
+        venueName: 'Parc des Princes',
+        venueCity: 'Paris',
+        venueCapacity: 47929,
+      ),
+      _team(
+        id: 505,
+        name: 'Inter Milan',
+        country: 'Italy',
+        founded: 1908,
+        venueName: 'San Siro',
+        venueCity: 'Milan',
+        venueCapacity: 80018,
+      ),
+    ];
+  }
+
+  static List<TeamModel> searchTeams(String query) {
+    final trimmedQuery = query.toLowerCase().trim();
+
+    if (trimmedQuery.length < 3) {
+      return const [];
+    }
+
+    return teams().where((team) {
+      return team.name.toLowerCase().contains(trimmedQuery) ||
+          team.country.toLowerCase().contains(trimmedQuery);
+    }).toList();
+  }
+
+  static List<LeagueModel> searchLeagues(String query) {
+    final trimmedQuery = query.toLowerCase().trim();
+
+    if (trimmedQuery.length < 3) {
+      return const [];
+    }
+
+    return LeagueCatalog.topLeagues.where((league) {
+      return league.name.toLowerCase().contains(trimmedQuery) ||
+          league.country.toLowerCase().contains(trimmedQuery);
+    }).toList();
+  }
+
+  static TeamDetailsModel? teamDetailsForTeam(int teamId) {
+    TeamModel? team;
+
+    for (final item in teams()) {
+      if (item.id == teamId) {
+        team = item;
+        break;
+      }
+    }
+
+    if (team == null) {
+      return null;
+    }
+
+    return TeamDetailsModel(
+      team: team,
+      recentFixtures: _recentFixturesForTeam(team),
+      squad: _demoSquad(team),
+      coach: _demoCoach(team),
+      lineup: TeamLineupSummaryModel(
+        formation: '4-3-3',
+        startXI: _demoSquad(team).take(11).toList(),
+      ),
+    );
+  }
+
   static List<FixtureModel> fixturesForDate(DateTime date) {
     final matchDate = _dateTime(date, 20, 30);
 
@@ -391,6 +522,64 @@ class DemoFootballData {
       venueCity: venueCity,
       referee: 'Demo Referee',
     );
+  }
+
+  static TeamModel _team({
+    required int id,
+    required String name,
+    required String country,
+    required int founded,
+    required String venueName,
+    required String venueCity,
+    required int venueCapacity,
+  }) {
+    return TeamModel(
+      id: id,
+      name: name,
+      country: country,
+      logo: 'https://media.api-sports.io/football/teams/$id.png',
+      founded: founded,
+      venueName: venueName,
+      venueCity: venueCity,
+      venueCapacity: venueCapacity,
+    );
+  }
+
+  static List<FixtureModel> _recentFixturesForTeam(TeamModel team) {
+    final fixtures = [
+      ...fixturesForDate(DateTime.now()),
+      ...liveFixtures(),
+      ...worldCupFixtures(),
+    ];
+
+    return fixtures.where((fixture) {
+      return fixture.homeTeamId == team.id || fixture.awayTeamId == team.id;
+    }).toList();
+  }
+
+  static TeamCoachModel _demoCoach(TeamModel team) {
+    return TeamCoachModel(
+      id: team.id + 100000,
+      name: '${team.name} Coach',
+      age: 48,
+      nationality: team.country,
+      photo: '',
+    );
+  }
+
+  static List<TeamPlayerModel> _demoSquad(TeamModel team) {
+    final positions = ['G', 'D', 'D', 'D', 'D', 'M', 'M', 'M', 'F', 'F', 'F'];
+
+    return List.generate(18, (index) {
+      return TeamPlayerModel(
+        id: team.id * 100 + index,
+        name: '${team.name} Player ${index + 1}',
+        age: 20 + (index % 12),
+        number: index + 1,
+        position: index < positions.length ? positions[index] : 'Sub',
+        photo: '',
+      );
+    });
   }
 
   static List<StandingModel> _standings(
