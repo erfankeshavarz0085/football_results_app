@@ -5,6 +5,7 @@ import '../models/fixture_model.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 import 'match_details_screen.dart';
 
 class WorldCupScreen extends StatefulWidget {
@@ -43,10 +44,14 @@ class _WorldCupScreenState extends State<WorldCupScreen> {
           }
 
           if (snapshot.hasError) {
-            return const Center(
-              child: Text(
-                'خطا در دریافت اطلاعات جام جهانی',
-                style: TextStyle(color: Colors.grey),
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  ErrorMessages.fromException(snapshot.error!),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.grey),
+                ),
               ),
             );
           }

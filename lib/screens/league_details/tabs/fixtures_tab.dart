@@ -7,6 +7,7 @@ import '../../../models/fixture_model.dart';
 import '../../../providers/favorite_provider.dart';
 import '../../../providers/recent_view_provider.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/error_messages.dart';
 import '../../match_details_screen.dart';
 
 class FixturesTab extends StatefulWidget {
@@ -50,7 +51,7 @@ class _FixturesTabState extends State<FixturesTab> {
         }
 
         if (snapshot.hasError) {
-          return _messageBox('خطا در دریافت مسابقات لیگ');
+          return _messageBox(ErrorMessages.fromException(snapshot.error!));
         }
 
         final fixtures = snapshot.data ?? [];

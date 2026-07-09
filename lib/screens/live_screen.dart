@@ -63,9 +63,9 @@ class _LiveScreenState extends State<LiveScreen> {
                   ),
                 )
               else if (provider.errorMessage != null)
-                _messageBox('خطا در دریافت مسابقات زنده')
+                _messageBox(provider.errorMessage!)
               else if (provider.liveFixtures.isEmpty)
-                _messageBox('در حال حاضر مسابقه زنده‌ای وجود ندارد')
+                _messageBox('No live matches right now')
               else
                 ..._buildLeagueCards(provider.liveFixtures),
             ],

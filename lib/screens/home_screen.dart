@@ -131,11 +131,11 @@ class _HomeContentState extends State<HomeContent> {
                   ),
                 )
               else if (provider.errorMessage != null)
-                _messageBox('خطا در دریافت اطلاعات')
+                _messageBox(provider.errorMessage!)
               else if (provider.todayFixtures.isEmpty)
-                _messageBox('مسابقه‌ای برای امروز پیدا نشد')
+                _messageBox('No fixtures found for this date')
               else if (filteredFixtures.isEmpty)
-                _messageBox('نتیجه‌ای برای جستجوی شما پیدا نشد')
+                _messageBox('No fixtures match your search')
               else
                 ..._buildLeagueCards(filteredFixtures),
             ],

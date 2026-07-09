@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/league_model.dart';
 import '../models/team_model.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 
 class TeamProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -28,7 +29,7 @@ class TeamProvider extends ChangeNotifier {
     try {
       teamDetails = await _apiService.getTeamDetails(teamId);
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = ErrorMessages.fromException(e);
     }
 
     isLoading = false;
@@ -53,7 +54,7 @@ class TeamProvider extends ChangeNotifier {
     try {
       searchResults = await _apiService.searchTeams(trimmedQuery);
     } catch (e) {
-      searchErrorMessage = e.toString();
+      searchErrorMessage = ErrorMessages.fromException(e);
     }
 
     isSearchLoading = false;
@@ -78,7 +79,7 @@ class TeamProvider extends ChangeNotifier {
     try {
       leagueSearchResults = await _apiService.searchLeagues(trimmedQuery);
     } catch (e) {
-      leagueSearchErrorMessage = e.toString();
+      leagueSearchErrorMessage = ErrorMessages.fromException(e);
     }
 
     isLeagueSearchLoading = false;

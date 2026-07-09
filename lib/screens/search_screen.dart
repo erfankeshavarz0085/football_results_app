@@ -557,7 +557,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     if (provider.searchErrorMessage != null && trimmedQuery.length >= 3) {
-      return _messageBox('Team search failed. Please try again.');
+      return _messageBox(provider.searchErrorMessage!);
     }
 
     if (teams.isEmpty) {
@@ -584,7 +584,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     if (provider.leagueSearchErrorMessage != null && trimmedQuery.length >= 3) {
-      return _messageBox('League search failed. Please try again.');
+      return _messageBox(provider.leagueSearchErrorMessage!);
     }
 
     if (leagues.isEmpty) {

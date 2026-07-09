@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/fixture_model.dart';
 import '../models/standing_model.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 
 class FixtureProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -33,7 +34,7 @@ class FixtureProvider extends ChangeNotifier {
     try {
       todayFixtures = await _apiService.getFixturesByDate(selectedDate);
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = ErrorMessages.fromException(e);
     }
 
     isLoading = false;
@@ -68,7 +69,7 @@ class FixtureProvider extends ChangeNotifier {
     try {
       liveFixtures = await _apiService.getLiveFixtures();
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = ErrorMessages.fromException(e);
     }
 
     isLoading = false;
@@ -90,7 +91,7 @@ class FixtureProvider extends ChangeNotifier {
       );
       standingsByLeague[_standingsKey(leagueId, season)] = standings;
     } catch (e) {
-      standingsErrorMessage = e.toString();
+      standingsErrorMessage = ErrorMessages.fromException(e);
     }
 
     isStandingsLoading = false;
