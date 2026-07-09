@@ -270,22 +270,50 @@ class _HomeContentState extends State<HomeContent> {
             ),
           ),
           Expanded(
-            child: Column(
-              children: [
-                Text(
-                  DateFormat('EEE, d MMM yyyy').format(provider.selectedDate),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+            child: InkWell(
+              onTap: () => _pickFixtureDate(provider),
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children: [
+                    Text(
+                      DateFormat('EEE, d MMM yyyy').format(provider.selectedDate),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.calendar_month_rounded,
+                          color: Colors.grey,
+                          size: 13,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          provider.isSelectedDateToday
+                              ? 'Today'
+                              : 'Tap to change date',
+                          style: TextStyle(color: Colors.grey, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  provider.isSelectedDateToday ? 'Today' : 'Selected date',
-                  style: const TextStyle(color: Colors.grey, fontSize: 11),
-                ),
-              ],
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Pick date',
+            onPressed: () => _pickFixtureDate(provider),
+            icon: const Icon(
+              Icons.calendar_month_rounded,
+              color: Colors.greenAccent,
             ),
           ),
           TextButton(
@@ -303,6 +331,37 @@ class _HomeContentState extends State<HomeContent> {
         ],
       ),
     );
+  }
+
+  Future<void> _pickFixtureDate(FixtureProvider provider) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: provider.selectedDate,
+      firstDate: DateTime(2010),
+      lastDate: DateTime(DateTime.now().year + 2, 12, 31),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.greenAccent,
+              onPrimary: Colors.black,
+              surface: Color(0xff161b22),
+              onSurface: Colors.white,
+            ),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: Color(0xff0d1117),
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+
+    if (pickedDate == null) {
+      return;
+    }
+
+    await provider.loadFixturesForDate(pickedDate);
   }
 
   Widget _sectionHeader({
