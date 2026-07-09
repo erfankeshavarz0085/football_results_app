@@ -57,4 +57,28 @@ class StandingModel {
       description: json['description'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'rank': rank,
+      'team': {
+        'id': teamId,
+        'name': teamName,
+        'logo': teamLogo,
+      },
+      'all': {
+        'played': played,
+        'win': win,
+        'draw': draw,
+        'lose': lose,
+        'goals': {
+          'for': goalsFor,
+          'against': goalsAgainst,
+        },
+      },
+      'goalsDiff': goalDifference,
+      'points': points,
+      'description': description,
+    };
+  }
 }

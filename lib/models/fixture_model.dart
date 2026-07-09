@@ -80,4 +80,46 @@ class FixtureModel {
       referee: json['fixture']?['referee'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'fixture': {
+        'id': id,
+        'date': date,
+        'referee': referee,
+        'status': {
+          'short': status,
+        },
+        'venue': {
+          'name': venueName,
+          'city': venueCity,
+        },
+      },
+      'league': {
+        'id': leagueId,
+        'name': leagueName,
+        'logo': leagueLogo,
+        'country': country,
+        'flag': countryFlag,
+        'round': round,
+        'season': season,
+      },
+      'teams': {
+        'home': {
+          'id': homeTeamId,
+          'name': homeTeam,
+          'logo': homeLogo,
+        },
+        'away': {
+          'id': awayTeamId,
+          'name': awayTeam,
+          'logo': awayLogo,
+        },
+      },
+      'goals': {
+        'home': homeScore,
+        'away': awayScore,
+      },
+    };
+  }
 }

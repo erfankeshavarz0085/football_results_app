@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/fixture_model.dart';
 import '../models/league_model.dart';
@@ -11,6 +12,8 @@ import '../utils/constants.dart';
 import '../models/match_detail_model.dart';
 
 class ApiService {
+  static const String _persistentCachePrefix = 'api_cache';
+
   static final Map<String, _CacheItem<List<FixtureModel>>> _fixtureCache = {};
   static final Map<String, _CacheItem<List<StandingModel>>> _standingsCache = {};
   static DateTime? _lastRequestAt;
@@ -104,17 +107,32 @@ class ApiService {
       return cached.data;
     }
 
+    final persistentCache = await _readFixturePersistentCache(cacheKey);
+
+    if (persistentCache != null && !persistentCache.isExpired(cacheDuration)) {
+      debugPrint('PERSISTENT CACHE HIT: $cacheKey');
+      _fixtureCache[cacheKey] = _CacheItem(data: persistentCache.data);
+      return persistentCache.data;
+    }
+
     debugPrint('CACHE MISS: $cacheKey');
 
     try {
       final data = await _fetchFixtures(url);
       _fixtureCache[cacheKey] = _CacheItem(data: data);
+      await _saveFixturePersistentCache(cacheKey, data);
 
       return data;
     } catch (e) {
       if (cached != null) {
         debugPrint('CACHE STALE FALLBACK: $cacheKey');
         return cached.data;
+      }
+
+      if (persistentCache != null) {
+        debugPrint('PERSISTENT CACHE STALE FALLBACK: $cacheKey');
+        _fixtureCache[cacheKey] = _CacheItem(data: persistentCache.data);
+        return persistentCache.data;
       }
 
       rethrow;
@@ -137,11 +155,20 @@ class ApiService {
       return cached.data;
     }
 
+    final persistentCache = await _readStandingPersistentCache(cacheKey);
+
+    if (persistentCache != null && !persistentCache.isExpired(cacheDuration)) {
+      debugPrint('PERSISTENT CACHE HIT: $cacheKey');
+      _standingsCache[cacheKey] = _CacheItem(data: persistentCache.data);
+      return persistentCache.data;
+    }
+
     debugPrint('CACHE MISS: $cacheKey');
 
     try {
       final data = await _fetchStandings(url);
       _standingsCache[cacheKey] = _CacheItem(data: data);
+      await _saveStandingPersistentCache(cacheKey, data);
 
       return data;
     } catch (e) {
@@ -150,8 +177,116 @@ class ApiService {
         return cached.data;
       }
 
+      if (persistentCache != null) {
+        debugPrint('PERSISTENT CACHE STALE FALLBACK: $cacheKey');
+        _standingsCache[cacheKey] = _CacheItem(data: persistentCache.data);
+        return persistentCache.data;
+      }
+
       rethrow;
     }
+  }
+
+  Future<void> _saveFixturePersistentCache(
+    String cacheKey,
+    List<FixtureModel> data,
+  ) async {
+    final rawData = data.map((fixture) => fixture.toJson()).toList();
+    await _savePersistentCache(cacheKey, rawData);
+  }
+
+  Future<void> _saveStandingPersistentCache(
+    String cacheKey,
+    List<StandingModel> data,
+  ) async {
+    final rawData = data.map((standing) => standing.toJson()).toList();
+    await _savePersistentCache(cacheKey, rawData);
+  }
+
+  Future<void> _savePersistentCache(
+    String cacheKey,
+    List<Map<String, dynamic>> data,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final payload = {
+      'createdAt': DateTime.now().toIso8601String(),
+      'data': data,
+    };
+
+    await prefs.setString(_persistentCacheKey(cacheKey), jsonEncode(payload));
+  }
+
+  Future<_CacheItem<List<FixtureModel>>?> _readFixturePersistentCache(
+    String cacheKey,
+  ) async {
+    final rawData = await _readPersistentCache(cacheKey);
+
+    if (rawData == null) {
+      return null;
+    }
+
+    final fixtures = rawData.data.map((json) {
+      return FixtureModel.fromJson(json);
+    }).toList();
+
+    return _CacheItem(
+      data: fixtures,
+      createdAt: rawData.createdAt,
+    );
+  }
+
+  Future<_CacheItem<List<StandingModel>>?> _readStandingPersistentCache(
+    String cacheKey,
+  ) async {
+    final rawData = await _readPersistentCache(cacheKey);
+
+    if (rawData == null) {
+      return null;
+    }
+
+    final standings = rawData.data.map((json) {
+      return StandingModel.fromJson(json);
+    }).toList();
+
+    return _CacheItem(
+      data: standings,
+      createdAt: rawData.createdAt,
+    );
+  }
+
+  Future<_PersistentCacheData?> _readPersistentCache(String cacheKey) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rawPayload = prefs.getString(_persistentCacheKey(cacheKey));
+
+      if (rawPayload == null) {
+        return null;
+      }
+
+      final payload = jsonDecode(rawPayload) as Map<String, dynamic>;
+      final createdAt = DateTime.tryParse(payload['createdAt'] ?? '');
+      final List rawData = payload['data'] ?? [];
+
+      if (createdAt == null) {
+        return null;
+      }
+
+      final data = rawData.whereType<Map>().map((item) {
+        return Map<String, dynamic>.from(item);
+      }).toList();
+
+      return _PersistentCacheData(
+        createdAt: createdAt,
+        data: data,
+      );
+    } catch (e) {
+      debugPrint('PERSISTENT CACHE READ ERROR: $cacheKey $e');
+      return null;
+    }
+  }
+
+  String _persistentCacheKey(String cacheKey) {
+    return '${_persistentCachePrefix}_$cacheKey';
   }
 
   Future<List<FixtureModel>> _fetchFixtures(Uri url) async {
@@ -585,9 +720,20 @@ class _CacheItem<T> {
 
   _CacheItem({
     required this.data,
-  }) : createdAt = DateTime.now();
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   bool isExpired(Duration duration) {
     return DateTime.now().difference(createdAt) > duration;
   }
+}
+
+class _PersistentCacheData {
+  final DateTime createdAt;
+  final List<Map<String, dynamic>> data;
+
+  _PersistentCacheData({
+    required this.createdAt,
+    required this.data,
+  });
 }
