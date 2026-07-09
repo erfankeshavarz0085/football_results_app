@@ -136,7 +136,7 @@ class ApiService {
         return persistentCache.data;
       }
 
-      final demoData = _demoFixturesForCache(cacheKey);
+      final demoData = await _demoFixturesForCache(cacheKey);
 
       if (demoData.isNotEmpty) {
         debugPrint('DEMO FIXTURE FALLBACK: $cacheKey');
@@ -151,8 +151,8 @@ class ApiService {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-  List<FixtureModel> _demoFixturesForCache(String cacheKey) {
-    if (!AppConstants.demoFallbackEnabled) {
+  Future<List<FixtureModel>> _demoFixturesForCache(String cacheKey) async {
+    if (!await _isDemoFallbackEnabled()) {
       return const [];
     }
 
@@ -185,8 +185,8 @@ class ApiService {
     return const [];
   }
 
-  List<StandingModel> _demoStandingsForCache(String cacheKey) {
-    if (!AppConstants.demoFallbackEnabled) {
+  Future<List<StandingModel>> _demoStandingsForCache(String cacheKey) async {
+    if (!await _isDemoFallbackEnabled()) {
       return const [];
     }
 
@@ -246,7 +246,7 @@ class ApiService {
         return persistentCache.data;
       }
 
-      final demoData = _demoStandingsForCache(cacheKey);
+      final demoData = await _demoStandingsForCache(cacheKey);
 
       if (demoData.isNotEmpty) {
         debugPrint('DEMO STANDINGS FALLBACK: $cacheKey');
@@ -473,7 +473,7 @@ class ApiService {
 
       final demoDetail = DemoFootballData.matchDetailsForFixture(fixtureId);
 
-      if (AppConstants.demoFallbackEnabled && demoDetail != null) {
+      if (await _isDemoFallbackEnabled() && demoDetail != null) {
         debugPrint('DEMO MATCH DETAIL FALLBACK: $fixtureId');
         return demoDetail;
       }
@@ -732,6 +732,15 @@ class ApiService {
     if (AppConstants.apiKey.isEmpty) {
       throw Exception('API key is missing. Add API_KEY to .env.');
     }
+  }
+
+  Future<bool> _isDemoFallbackEnabled() async {
+    if (!AppConstants.demoFallbackEnabled) {
+      return false;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('demo_fallback_enabled') ?? true;
   }
 
   Future<void> _waitForRequestSlot() {

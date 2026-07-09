@@ -5,10 +5,12 @@ class AppSettingsProvider extends ChangeNotifier {
   static const String _showFavoritesHomeKey = 'show_favorites_home';
   static const String _showRecentSearchKey = 'show_recent_search';
   static const String _showMatchAlertsKey = 'show_match_alerts';
+  static const String _demoFallbackKey = 'demo_fallback_enabled';
 
   bool showFavoritesOnHome = true;
   bool showRecentlyViewedInSearch = true;
   bool showMatchAlertControls = true;
+  bool demoFallbackEnabled = true;
   bool isLoaded = false;
 
   AppSettingsProvider() {
@@ -21,6 +23,7 @@ class AppSettingsProvider extends ChangeNotifier {
     showFavoritesOnHome = prefs.getBool(_showFavoritesHomeKey) ?? true;
     showRecentlyViewedInSearch = prefs.getBool(_showRecentSearchKey) ?? true;
     showMatchAlertControls = prefs.getBool(_showMatchAlertsKey) ?? true;
+    demoFallbackEnabled = prefs.getBool(_demoFallbackKey) ?? true;
     isLoaded = true;
 
     notifyListeners();
@@ -48,5 +51,13 @@ class AppSettingsProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_showMatchAlertsKey, value);
+  }
+
+  Future<void> setDemoFallbackEnabled(bool value) async {
+    demoFallbackEnabled = value;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_demoFallbackKey, value);
   }
 }

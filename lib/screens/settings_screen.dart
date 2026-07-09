@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/app_settings_provider.dart';
+import '../utils/constants.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -23,6 +24,16 @@ class SettingsScreen extends StatelessWidget {
         children: [
           _header(),
           const SizedBox(height: 18),
+          _apiStatusCard(settings),
+          const SizedBox(height: 14),
+          _settingSwitch(
+            icon: Icons.offline_bolt_rounded,
+            title: 'Demo fallback',
+            subtitle:
+                'Show sample football data when the real API is unavailable.',
+            value: settings.demoFallbackEnabled,
+            onChanged: settings.setDemoFallbackEnabled,
+          ),
           _settingSwitch(
             icon: Icons.favorite_rounded,
             title: 'Favorites summary on Home',
@@ -43,6 +54,86 @@ class SettingsScreen extends StatelessWidget {
             subtitle: 'Show Kickoff, Goals and Full time alert preferences.',
             value: settings.showMatchAlertControls,
             onChanged: settings.setShowMatchAlertControls,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _apiStatusCard(AppSettingsProvider settings) {
+    final apiEnabled = AppConstants.apiEnabled;
+    final envDemoEnabled = AppConstants.demoFallbackEnabled;
+    final demoEnabled = envDemoEnabled && settings.demoFallbackEnabled;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.api_rounded, color: Colors.greenAccent),
+              SizedBox(width: 12),
+              Text(
+                'Data source',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _statusRow(
+            'Real API',
+            apiEnabled ? 'Enabled' : 'Disabled',
+            apiEnabled ? Colors.greenAccent : Colors.redAccent,
+          ),
+          _statusRow(
+            'Demo fallback',
+            demoEnabled ? 'Enabled' : 'Disabled',
+            demoEnabled ? Colors.greenAccent : Colors.redAccent,
+          ),
+          if (!envDemoEnabled) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Demo fallback is disabled in .env.',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _statusRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
       ),
