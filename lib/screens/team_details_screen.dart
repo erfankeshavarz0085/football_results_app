@@ -76,20 +76,77 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
   }
 
   Widget _body(TeamDetailsModel details) {
+    return DefaultTabController(
+      length: 4,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _header(details.team, details.form),
+          ),
+          const TabBar(
+            isScrollable: true,
+            indicatorColor: Colors.greenAccent,
+            labelColor: Colors.greenAccent,
+            unselectedLabelColor: Colors.grey,
+            tabs: [
+              Tab(text: 'Overview'),
+              Tab(text: 'Matches'),
+              Tab(text: 'Lineup'),
+              Tab(text: 'Squad'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _overviewTab(details),
+                _matchesTab(details.recentFixtures),
+                _lineupTab(details.lineup),
+                _squadTab(details.squad),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _overviewTab(TeamDetailsModel details) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _header(details.team, details.form),
+        _quickStats(details),
         const SizedBox(height: 14),
         _infoCards(details.team),
         const SizedBox(height: 14),
         _coachCard(details.coach),
-        const SizedBox(height: 14),
-        _lineupCard(details.lineup),
-        const SizedBox(height: 14),
-        _squadCard(details.squad),
-        const SizedBox(height: 14),
-        _recentFixtures(details.recentFixtures),
+      ],
+    );
+  }
+
+  Widget _matchesTab(List<FixtureModel> fixtures) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _recentFixtures(fixtures),
+      ],
+    );
+  }
+
+  Widget _lineupTab(TeamLineupSummaryModel? lineup) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _lineupCard(lineup),
+      ],
+    );
+  }
+
+  Widget _squadTab(List<TeamPlayerModel> squad) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _squadCard(squad),
       ],
     );
   }
@@ -184,7 +241,63 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
           'City',
           team.venueCity.isEmpty ? 'Unknown' : team.venueCity,
         ),
+        _infoCard(
+          Icons.event_seat_rounded,
+          'Capacity',
+          team.venueCapacity == 0 ? 'Unknown' : team.venueCapacity.toString(),
+        ),
       ],
+    );
+  }
+
+  Widget _quickStats(TeamDetailsModel details) {
+    final wins = details.form.where((item) => item == 'W').length;
+    final draws = details.form.where((item) => item == 'D').length;
+    final losses = details.form.where((item) => item == 'L').length;
+
+    return GridView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.45,
+      ),
+      children: [
+        _statTile('Wins', wins.toString(), Colors.greenAccent),
+        _statTile('Draws', draws.toString(), Colors.amber),
+        _statTile('Losses', losses.toString(), Colors.redAccent),
+      ],
+    );
+  }
+
+  Widget _statTile(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 
