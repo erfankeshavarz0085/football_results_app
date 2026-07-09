@@ -21,7 +21,11 @@ class ApiService {
       };
 
   Future<List<FixtureModel>> getTodayFixtures() async {
-    final date = _todayDate();
+    return getFixturesByDate(DateTime.now());
+  }
+
+  Future<List<FixtureModel>> getFixturesByDate(DateTime selectedDate) async {
+    final date = _formatDate(selectedDate);
 
     final url = Uri.parse(
       '${AppConstants.baseUrl}/fixtures?date=$date&timezone=Asia/Tehran',
@@ -117,10 +121,8 @@ class ApiService {
     }
   }
 
-  String _todayDate() {
-    final now = DateTime.now();
-
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   Future<List<StandingModel>> _fetchStandingsWithCache({

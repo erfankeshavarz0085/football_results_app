@@ -13,24 +13,47 @@ class FixtureProvider extends ChangeNotifier {
   bool isStandingsLoading = false;
   String? standingsErrorMessage;
 
+  DateTime selectedDate = DateTime.now();
   List<FixtureModel> todayFixtures = [];
   List<FixtureModel> liveFixtures = [];
 
   final Map<int, List<StandingModel>> standingsByLeague = {};
 
   Future<void> loadTodayFixtures() async {
+    selectedDate = DateTime.now();
+    await loadFixturesForDate(selectedDate);
+  }
+
+  Future<void> loadFixturesForDate(DateTime date) async {
+    selectedDate = DateTime(date.year, date.month, date.day);
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      todayFixtures = await _apiService.getTodayFixtures();
+      todayFixtures = await _apiService.getFixturesByDate(selectedDate);
     } catch (e) {
       errorMessage = e.toString();
     }
 
     isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> loadPreviousDay() {
+    return loadFixturesForDate(selectedDate.subtract(const Duration(days: 1)));
+  }
+
+  Future<void> loadNextDay() {
+    return loadFixturesForDate(selectedDate.add(const Duration(days: 1)));
+  }
+
+  bool get isSelectedDateToday {
+    final now = DateTime.now();
+
+    return selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
   }
 
   Future<void> loadLiveFixtures() async {
