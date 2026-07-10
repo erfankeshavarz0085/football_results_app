@@ -17,6 +17,7 @@ class StandingModel {
   final int points;
 
   final String description;
+  final String group;
 
   StandingModel({
     required this.rank,
@@ -32,6 +33,7 @@ class StandingModel {
     required this.goalDifference,
     required this.points,
     required this.description,
+    this.group = '',
   });
 
   factory StandingModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,7 @@ class StandingModel {
       points: json['points'] ?? 0,
 
       description: json['description'] ?? '',
+      group: json['group'] ?? '',
     );
   }
 
@@ -79,6 +82,7 @@ class StandingModel {
       'goalsDiff': goalDifference,
       'points': points,
       'description': description,
+      'group': group,
     };
   }
 }

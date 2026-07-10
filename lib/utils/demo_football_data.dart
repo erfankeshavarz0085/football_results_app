@@ -347,6 +347,21 @@ class DemoFootballData {
 
   static List<StandingModel> standingsForLeague(int leagueId) {
     switch (leagueId) {
+      case 1:
+        return [
+          ..._standings([
+            ('Netherlands', 7, 4),
+            ('Senegal', 6, 1),
+            ('Ecuador', 4, 1),
+            ('Qatar', 0, -6),
+          ], group: 'Group A'),
+          ..._standings([
+            ('England', 7, 7),
+            ('United States', 5, 1),
+            ('Iran', 3, -3),
+            ('Wales', 1, -5),
+          ], group: 'Group B'),
+        ];
       case 39:
         return _standings([
           ('Liverpool', 40, 18),
@@ -584,6 +599,7 @@ class DemoFootballData {
 
   static List<StandingModel> _standings(
     List<(String teamName, int points, int goalDifference)> teams,
+    {String group = ''}
   ) {
     return teams.indexed.map((entry) {
       final index = entry.$1;
@@ -607,6 +623,7 @@ class DemoFootballData {
         goalDifference: team.$3,
         points: team.$2,
         description: index < 4 ? 'Demo table' : '',
+        group: group,
       );
     }).toList();
   }

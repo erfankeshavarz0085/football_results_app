@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/standing_model.dart';
 import '../../../providers/fixture_provider.dart';
+import '../../../widgets/team_logo.dart';
 import '../../team_details_screen.dart';
 
 class StandingsTab extends StatefulWidget {
@@ -108,20 +108,7 @@ class _StandingsTabState extends State<StandingsTab> {
 
             else
 
-              Expanded(
-                child: ListView.builder(
-
-                  itemCount: standings.length,
-
-                  itemBuilder: (context, index) {
-
-                    final team = standings[index];
-
-                    return _standingCard(context, team);
-
-                  },
-                ),
-              ),
+              Expanded(child: _standingsList(context, standings)),
 
           ],
         ),
@@ -130,6 +117,96 @@ class _StandingsTabState extends State<StandingsTab> {
   }
 
 
+
+  Widget _standingsList(BuildContext context, List<StandingModel> standings) {
+    if (widget.leagueId != 1) {
+      return ListView.builder(
+        itemCount: standings.length,
+        itemBuilder: (context, index) {
+          final team = standings[index];
+
+          return _standingCard(context, team);
+        },
+      );
+    }
+
+    final groupedStandings = _groupWorldCupStandings(standings);
+
+    return ListView(
+      children: [
+        ...groupedStandings.entries.map((entry) {
+          final groupTeams = entry.value.take(4).toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _groupHeader(entry.key),
+              ...groupTeams.map((team) => _standingCard(context, team)),
+              const SizedBox(height: 6),
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
+  Map<String, List<StandingModel>> _groupWorldCupStandings(
+    List<StandingModel> standings,
+  ) {
+    final grouped = <String, List<StandingModel>>{};
+
+    for (final team in standings) {
+      final group = team.group.trim().isEmpty ? 'World Cup' : team.group.trim();
+
+      grouped.putIfAbsent(group, () => []);
+      grouped[group]!.add(team);
+    }
+
+    for (final teams in grouped.values) {
+      teams.sort((a, b) => a.rank.compareTo(b.rank));
+    }
+
+    return Map.fromEntries(
+      grouped.entries.toList()
+        ..sort(
+          (a, b) => _groupSortValue(a.key).compareTo(_groupSortValue(b.key)),
+        ),
+    );
+  }
+
+  int _groupSortValue(String group) {
+    final match = RegExp(r'Group ([A-H])').firstMatch(group);
+
+    if (match == null) {
+      return 1000 + group.hashCode.abs();
+    }
+
+    return match.group(1)!.codeUnitAt(0);
+  }
+
+  Widget _groupHeader(String groupName) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 4),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.table_chart_rounded,
+            color: Colors.greenAccent,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            groupName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _standingCard(BuildContext context, StandingModel team) {
 
@@ -210,32 +287,7 @@ class _StandingsTabState extends State<StandingsTab> {
 
 
 
-              CachedNetworkImage(
-
-                imageUrl: team.teamLogo,
-
-                width: 38,
-
-                height: 38,
-
-
-                errorWidget:
-                    (_, __, ___) {
-
-                  return const Icon(
-
-                    Icons.shield,
-
-                    color:
-                        Colors.greenAccent,
-
-                    size: 32,
-
-                  );
-
-                },
-
-              ),
+              TeamLogo(logoUrl: team.teamLogo, size: 38),
 
 
 

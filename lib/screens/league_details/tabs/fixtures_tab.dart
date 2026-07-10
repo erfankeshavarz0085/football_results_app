@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +7,7 @@ import '../../../providers/favorite_provider.dart';
 import '../../../providers/recent_view_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../utils/error_messages.dart';
+import '../../../widgets/team_logo.dart';
 import '../../match_details_screen.dart';
 
 class FixturesTab extends StatefulWidget {
@@ -60,7 +60,7 @@ class _FixturesTabState extends State<FixturesTab> {
           return _messageBox('مسابقه‌ای برای این لیگ پیدا نشد');
         }
 
-        final groupedFixtures = _groupFixturesByRound(fixtures);
+        final groupedFixtures = _groupFixtures(fixtures);
         final rounds = groupedFixtures.keys.toList();
 
         selectedRound ??= rounds.isNotEmpty ? rounds.first : null;
@@ -100,21 +100,24 @@ class _FixturesTabState extends State<FixturesTab> {
     );
   }
 
-  Map<String, List<FixtureModel>> _groupFixturesByRound(
+  Map<String, List<FixtureModel>> _groupFixtures(
     List<FixtureModel> fixtures,
   ) {
     final Map<String, List<FixtureModel>> grouped = {};
 
     for (final fixture in fixtures) {
-      final round = fixture.round.isEmpty
-          ? 'Fixtures'
-          : _cleanRound(fixture.round);
+      final round = _roundGroupLabel(fixture);
 
       grouped.putIfAbsent(round, () => []);
       grouped[round]!.add(fixture);
     }
 
-    return grouped;
+    return Map.fromEntries(
+      grouped.entries.toList()
+        ..sort(
+          (a, b) => _roundSortValue(a.key).compareTo(_roundSortValue(b.key)),
+        ),
+    );
   }
 
   Widget _roundSelector({
@@ -356,23 +359,7 @@ class _FixturesTabState extends State<FixturesTab> {
   Widget _teamMini(String name, String logo) {
     return Column(
       children: [
-        if (logo.isNotEmpty)
-          CachedNetworkImage(
-            imageUrl: logo,
-            width: 34,
-            height: 34,
-            errorWidget: (_, __, ___) => const Icon(
-              Icons.shield_rounded,
-              color: Colors.greenAccent,
-              size: 28,
-            ),
-          )
-        else
-          const Icon(
-            Icons.shield_rounded,
-            color: Colors.greenAccent,
-            size: 28,
-          ),
+        TeamLogo(logoUrl: logo, size: 34),
         const SizedBox(height: 6),
         Text(
           name,
@@ -455,6 +442,91 @@ class _FixturesTabState extends State<FixturesTab> {
         .replaceAll('Regular Season - ', 'Matchweek ')
         .replaceAll('Qualification - ', 'Qualification • ')
         .replaceAll('League Stage - ', 'League Stage • ');
+  }
+
+  String _roundGroupLabel(FixtureModel fixture) {
+    final round = fixture.round;
+    final trimmedRound = round.trim();
+
+    if (trimmedRound.isEmpty) {
+      return 'Fixtures';
+    }
+
+    final groupMatch = RegExp(r'^(Group [A-H])\b').firstMatch(trimmedRound);
+
+    if (groupMatch != null) {
+      return groupMatch.group(1)!;
+    }
+
+    if (widget.leagueId == 1 && trimmedRound.contains('Group')) {
+      final group = _worldCupGroupForFixture(fixture);
+
+      if (group != null) {
+        return group;
+      }
+    }
+
+    return _cleanRound(trimmedRound);
+  }
+
+  String? _worldCupGroupForFixture(FixtureModel fixture) {
+    return _worldCup2022Groups[fixture.homeTeam] ??
+        _worldCup2022Groups[fixture.awayTeam];
+  }
+
+  static const Map<String, String> _worldCup2022Groups = {
+    'Qatar': 'Group A',
+    'Ecuador': 'Group A',
+    'Senegal': 'Group A',
+    'Netherlands': 'Group A',
+    'England': 'Group B',
+    'Iran': 'Group B',
+    'United States': 'Group B',
+    'USA': 'Group B',
+    'Wales': 'Group B',
+    'Argentina': 'Group C',
+    'Saudi Arabia': 'Group C',
+    'Mexico': 'Group C',
+    'Poland': 'Group C',
+    'France': 'Group D',
+    'Australia': 'Group D',
+    'Denmark': 'Group D',
+    'Tunisia': 'Group D',
+    'Spain': 'Group E',
+    'Costa Rica': 'Group E',
+    'Germany': 'Group E',
+    'Japan': 'Group E',
+    'Belgium': 'Group F',
+    'Canada': 'Group F',
+    'Morocco': 'Group F',
+    'Croatia': 'Group F',
+    'Brazil': 'Group G',
+    'Serbia': 'Group G',
+    'Switzerland': 'Group G',
+    'Cameroon': 'Group G',
+    'Portugal': 'Group H',
+    'Ghana': 'Group H',
+    'Uruguay': 'Group H',
+    'South Korea': 'Group H',
+    'Korea Republic': 'Group H',
+  };
+
+  int _roundSortValue(String round) {
+    final groupMatch = RegExp(r'^Group ([A-H])$').firstMatch(round);
+
+    if (groupMatch != null) {
+      return groupMatch.group(1)!.codeUnitAt(0);
+    }
+
+    const knockoutOrder = {
+      'Round of 16': 200,
+      'Quarter-finals': 210,
+      'Semi-finals': 220,
+      '3rd Place Final': 230,
+      'Final': 240,
+    };
+
+    return knockoutOrder[round] ?? 1000 + round.hashCode.abs();
   }
 
   Widget _inlineMessage(String text) {

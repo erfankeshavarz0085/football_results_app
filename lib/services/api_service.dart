@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,7 +81,7 @@ class ApiService {
     );
 
     return _fetchStandingsWithCache(
-      cacheKey: 'standings_${leagueId}_season_$season',
+      cacheKey: 'standings_v2_${leagueId}_season_$season',
       url: url,
       cacheDuration: const Duration(hours: 1),
     );
@@ -195,7 +194,7 @@ class ApiService {
     }
 
     final leagueMatch =
-        RegExp(r'^standings_(\d+)_season_').firstMatch(cacheKey);
+        RegExp(r'^standings(?:_v\d+)?_(\d+)_season_').firstMatch(cacheKey);
 
     if (leagueMatch == null) {
       return const [];
@@ -413,9 +412,25 @@ class ApiService {
           return [];
         }
 
-        final List firstTable = standingsData[0] ?? [];
+        final standings = <StandingModel>[];
 
-        return firstTable.map((json) => StandingModel.fromJson(json)).toList();
+        for (final table in standingsData) {
+          if (table is! List) {
+            continue;
+          }
+
+          for (final item in table) {
+            if (item is! Map) {
+              continue;
+            }
+
+            standings.add(
+              StandingModel.fromJson(Map<String, dynamic>.from(item)),
+            );
+          }
+        }
+
+        return standings;
       } else {
         throw Exception('API Error: ${response.statusCode}');
       }
@@ -760,8 +775,12 @@ class ApiService {
     _inFlightRequests[requestKey] = request;
 
     request.then(
-      (_) => _inFlightRequests.remove(requestKey),
-      onError: (_) => _inFlightRequests.remove(requestKey),
+      (_) {
+        _inFlightRequests.remove(requestKey);
+      },
+      onError: (_) {
+        _inFlightRequests.remove(requestKey);
+      },
     );
 
     return request;
