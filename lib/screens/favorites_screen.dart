@@ -5,12 +5,22 @@ import 'package:provider/provider.dart';
 import '../models/league_model.dart';
 import '../providers/app_settings_provider.dart';
 import '../providers/favorite_provider.dart';
+import '../widgets/team_logo.dart';
 import 'league_details/league_details_screen.dart';
 import 'match_details_screen.dart';
 import 'team_details_screen.dart';
 
-class FavoritesScreen extends StatelessWidget {
+enum FavoriteFilter { all, matches, leagues, teams }
+
+class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
+
+  @override
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  FavoriteFilter selectedFilter = FavoriteFilter.all;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +31,16 @@ class FavoritesScreen extends StatelessWidget {
     final hasFavorites = favoriteTeams.isNotEmpty ||
         favoriteLeagues.isNotEmpty ||
         followedMatches.isNotEmpty;
+    final showMatches = selectedFilter == FavoriteFilter.all ||
+        selectedFilter == FavoriteFilter.matches;
+    final showLeagues = selectedFilter == FavoriteFilter.all ||
+        selectedFilter == FavoriteFilter.leagues;
+    final showTeams = selectedFilter == FavoriteFilter.all ||
+        selectedFilter == FavoriteFilter.teams;
+    final hasFilteredFavorites =
+        (showMatches && followedMatches.isNotEmpty) ||
+            (showLeagues && favoriteLeagues.isNotEmpty) ||
+            (showTeams && favoriteTeams.isNotEmpty);
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
@@ -44,30 +64,40 @@ class FavoritesScreen extends StatelessWidget {
                       favoriteLeagues.length,
                       followedMatches.length,
                     ),
+                    const SizedBox(height: 14),
+                    _filterBar(
+                      teamCount: favoriteTeams.length,
+                      leagueCount: favoriteLeagues.length,
+                      matchCount: followedMatches.length,
+                    ),
                     const SizedBox(height: 20),
-                    if (followedMatches.isNotEmpty) ...[
-                      _sectionTitle('Followed Matches'),
-                      const SizedBox(height: 12),
-                      ...followedMatches.map((match) {
-                        return _followedMatchCard(context, match);
-                      }),
-                      const SizedBox(height: 10),
+                    if (!hasFilteredFavorites)
+                      _filteredEmptyState()
+                    else ...[
+                      if (showMatches && followedMatches.isNotEmpty) ...[
+                        _sectionTitle('Followed Matches'),
+                        const SizedBox(height: 12),
+                        ...followedMatches.map((match) {
+                          return _followedMatchCard(context, match);
+                        }),
+                        const SizedBox(height: 10),
+                      ],
+                      if (showLeagues && favoriteLeagues.isNotEmpty) ...[
+                        _sectionTitle('Favorite Leagues'),
+                        const SizedBox(height: 12),
+                        ...favoriteLeagues.map((league) {
+                          return _favoriteLeagueCard(context, league);
+                        }),
+                        const SizedBox(height: 10),
+                      ],
+                      if (showTeams && favoriteTeams.isNotEmpty) ...[
+                        _sectionTitle('Favorite Teams'),
+                        const SizedBox(height: 12),
+                        ...favoriteTeams.map((team) {
+                          return _favoriteTeamCard(context, team);
+                        }),
+                      ],
                     ],
-                    if (favoriteLeagues.isNotEmpty) ...[
-                      _sectionTitle('Favorite Leagues'),
-                      const SizedBox(height: 12),
-                      ...favoriteLeagues.map((league) {
-                        return _favoriteLeagueCard(context, league);
-                      }),
-                      const SizedBox(height: 10),
-                    ],
-                    if (favoriteTeams.isNotEmpty) ...[
-                      _sectionTitle('Favorite Teams'),
-                      const SizedBox(height: 12),
-                    ],
-                    ...favoriteTeams.map((team) {
-                      return _favoriteTeamCard(context, team);
-                    }),
                   ],
                 ),
     );
@@ -147,6 +177,81 @@ class FavoritesScreen extends StatelessWidget {
         color: Colors.white,
         fontSize: 17,
         fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _filterBar({
+    required int teamCount,
+    required int leagueCount,
+    required int matchCount,
+  }) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _filterChip(
+            FavoriteFilter.all,
+            'All',
+            teamCount + leagueCount + matchCount,
+          ),
+          _filterChip(FavoriteFilter.matches, 'Matches', matchCount),
+          _filterChip(FavoriteFilter.leagues, 'Leagues', leagueCount),
+          _filterChip(FavoriteFilter.teams, 'Teams', teamCount),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(FavoriteFilter filter, String label, int count) {
+    final isSelected = selectedFilter == filter;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: () {
+          setState(() => selectedFilter = filter);
+        },
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.greenAccent.withValues(alpha: 0.16)
+                : const Color(0xff161b22),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.greenAccent.withValues(alpha: 0.45)
+                  : Colors.white10,
+            ),
+          ),
+          child: Text(
+            '$label $count',
+            style: TextStyle(
+              color: isSelected ? Colors.greenAccent : Colors.grey,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _filteredEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: const Center(
+        child: Text(
+          'No items in this filter',
+          style: TextStyle(color: Colors.grey),
+        ),
       ),
     );
   }
@@ -328,24 +433,7 @@ class FavoritesScreen extends StatelessWidget {
   Widget _matchTeam(String name, String logo) {
     return Column(
       children: [
-        if (logo.isEmpty)
-          const Icon(
-            Icons.shield_rounded,
-            color: Colors.greenAccent,
-            size: 28,
-          )
-        else
-          CachedNetworkImage(
-            imageUrl: logo,
-            width: 34,
-            height: 34,
-            fit: BoxFit.contain,
-            errorWidget: (_, __, ___) => const Icon(
-              Icons.shield_rounded,
-              color: Colors.greenAccent,
-              size: 28,
-            ),
-          ),
+        TeamLogo(logoUrl: logo, size: 34),
         const SizedBox(height: 6),
         Text(
           name,
@@ -475,28 +563,7 @@ class FavoritesScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: const Color(0xff0d1117),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: team.logo.isEmpty
-                  ? const Icon(
-                      Icons.shield_rounded,
-                      color: Colors.greenAccent,
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: team.logo,
-                      fit: BoxFit.contain,
-                      errorWidget: (_, __, ___) => const Icon(
-                        Icons.shield_rounded,
-                        color: Colors.greenAccent,
-                      ),
-                    ),
-            ),
+            TeamLogo(logoUrl: team.logo, size: 44),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
