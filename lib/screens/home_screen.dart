@@ -72,6 +72,7 @@ class HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<HomeContent> {
   String searchQuery = '';
+  bool showAllOtherMatches = false;
 
   final List<int> importantLeagueIds = const [39, 140, 135, 78, 61, 2, 1];
 
@@ -493,7 +494,8 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Widget _otherMatchesCard(List<FixtureModel> matches) {
-    final visibleMatches = matches.take(6).toList();
+    final visibleMatches =
+        showAllOtherMatches ? matches : matches.take(6).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
@@ -512,6 +514,9 @@ class _HomeContentState extends State<HomeContent> {
             logo: '',
             count: matches.length,
             isOther: true,
+            trailing: showAllOtherMatches
+                ? _collapseOtherMatchesButton()
+                : null,
           ),
           const SizedBox(height: 12),
           ...visibleMatches.map(
@@ -519,12 +524,31 @@ class _HomeContentState extends State<HomeContent> {
           ),
           if (matches.length > 6) ...[
             const SizedBox(height: 8),
-            Center(
-              child: Text(
-                '${matches.length - 6} more fixtures',
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontWeight: FontWeight.bold,
+            InkWell(
+              onTap: () {
+                setState(() => showAllOtherMatches = !showAllOtherMatches);
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.greenAccent.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.greenAccent.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    showAllOtherMatches
+                        ? 'Show less'
+                        : '${matches.length - 6} more fixtures',
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -540,6 +564,7 @@ class _HomeContentState extends State<HomeContent> {
     required String logo,
     required int count,
     required bool isOther,
+    Widget? trailing,
   }) {
     return Row(
       children: [
@@ -587,11 +612,48 @@ class _HomeContentState extends State<HomeContent> {
             ],
           ),
         ),
-        Text(
-          '$count fixtures',
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
-        ),
+        trailing ??
+            Text(
+              '$count fixtures',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
       ],
+    );
+  }
+
+  Widget _collapseOtherMatchesButton() {
+    return InkWell(
+      onTap: () {
+        setState(() => showAllOtherMatches = false);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.greenAccent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.25)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.keyboard_arrow_up_rounded,
+              color: Colors.greenAccent,
+              size: 18,
+            ),
+            SizedBox(width: 3),
+            Text(
+              'Close',
+              style: TextStyle(
+                color: Colors.greenAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -791,6 +853,7 @@ class _HomeContentState extends State<HomeContent> {
             imageUrl: logo,
             width: 34,
             height: 34,
+            fit: BoxFit.contain,
             errorWidget: (_, __, ___) => const Icon(
               Icons.shield_rounded,
               color: Colors.greenAccent,
