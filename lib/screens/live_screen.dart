@@ -8,6 +8,7 @@ import '../providers/fixture_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../widgets/empty_state_card.dart';
 import '../widgets/loading_widget.dart';
+import '../widgets/team_logo.dart';
 import 'match_details_screen.dart';
 
 class LiveScreen extends StatefulWidget {
@@ -349,7 +350,7 @@ class _LiveScreenState extends State<LiveScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '${_displayCountry(fixture)} • ${fixture.leagueName}',
+                    '${_displayCountry(fixture)} - ${fixture.leagueName}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -447,23 +448,7 @@ class _LiveScreenState extends State<LiveScreen> {
   Widget _teamMini(String name, String logo) {
     return Column(
       children: [
-        if (logo.isNotEmpty)
-          CachedNetworkImage(
-            imageUrl: logo,
-            width: 34,
-            height: 34,
-            errorWidget: (_, __, ___) => const Icon(
-              Icons.shield_rounded,
-              color: Colors.greenAccent,
-              size: 28,
-            ),
-          )
-        else
-          const Icon(
-            Icons.shield_rounded,
-            color: Colors.greenAccent,
-            size: 28,
-          ),
+        TeamLogo(logoUrl: logo, size: 34),
         const SizedBox(height: 6),
         Text(
           name,
@@ -544,9 +529,6 @@ class _LiveScreenState extends State<LiveScreen> {
   }
 
   String _cleanRound(String round) {
-    return round
-        .replaceAll('Regular Season - ', 'Matchweek ')
-        .replaceAll('Qualification - ', 'Qualification • ')
-        .replaceAll('League Stage - ', 'League Stage • ');
+    return round.replaceAll('Regular Season - ', 'Matchweek ');
   }
 }

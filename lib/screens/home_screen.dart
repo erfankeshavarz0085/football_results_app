@@ -165,7 +165,7 @@ class _HomeContentState extends State<HomeContent> {
     required DateTime selectedDate,
     required VoidCallback onRefresh,
   }) {
-    final formattedDate = DateFormat('EEEE • d MMMM').format(selectedDate);
+    final formattedDate = DateFormat('EEEE - d MMMM').format(selectedDate);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -198,7 +198,7 @@ class _HomeContentState extends State<HomeContent> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '$formattedDate • $matchCount fixtures',
+                  '$formattedDate - $matchCount fixtures',
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
@@ -408,7 +408,7 @@ class _HomeContentState extends State<HomeContent> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '$teamCount teams • $leagueCount leagues • $matchCount matches saved',
+              '$teamCount teams - $leagueCount leagues - $matchCount matches saved',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -684,7 +684,7 @@ class _HomeContentState extends State<HomeContent> {
         ),
         child: const Center(
           child: Text(
-            'Show All →',
+            'Show All ->',
             style: TextStyle(
               color: Colors.greenAccent,
               fontWeight: FontWeight.bold,
@@ -732,7 +732,7 @@ class _HomeContentState extends State<HomeContent> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '${_displayCountry(fixture)} • ${fixture.leagueName}',
+                    '${_displayCountry(fixture)} - ${fixture.leagueName}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -943,9 +943,6 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   String _cleanRound(String round) {
-    return round
-        .replaceAll('Regular Season - ', 'Matchweek ')
-        .replaceAll('Qualification - ', 'Qualification • ')
-        .replaceAll('League Stage - ', 'League Stage • ');
+    return round.replaceAll('Regular Season - ', 'Matchweek ');
   }
 }

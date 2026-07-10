@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/match_detail_model.dart';
 import '../providers/match_detail_provider.dart';
+import '../widgets/team_logo.dart';
 import 'team_details_screen.dart';
 
 class MatchDetailsScreen extends StatefulWidget {
@@ -596,26 +596,7 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
   }
 
   Widget _logo(String logo, double size) {
-    if (logo.isEmpty) {
-      return Icon(
-        Icons.shield,
-        color: Colors.greenAccent,
-        size: size,
-      );
-    }
-
-    return CachedNetworkImage(
-      imageUrl: logo,
-      width: size,
-      height: size,
-      errorWidget: (_, __, ___) {
-        return Icon(
-          Icons.shield,
-          color: Colors.greenAccent,
-          size: size,
-        );
-      },
-    );
+    return TeamLogo(logoUrl: logo, size: size);
   }
 
   IconData _eventIcon(String type, String detail) {
@@ -641,6 +622,6 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
       if (event.comments.isNotEmpty) event.comments,
     ];
 
-    return parts.join(' • ');
+    return parts.join(' - ');
   }
 }

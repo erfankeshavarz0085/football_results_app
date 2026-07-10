@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import 'providers/favorite_provider.dart';
 import 'providers/fixture_provider.dart';
-import 'providers/league_provider.dart';
 import 'providers/match_detail_provider.dart';
 import 'providers/recent_view_provider.dart';
 import 'providers/app_settings_provider.dart';
@@ -38,11 +37,6 @@ class FootballApp extends StatelessWidget {
 
         ChangeNotifierProvider(
           create: (_) => FixtureProvider(),
-        ),
-
-
-        ChangeNotifierProvider(
-          create: (_) => LeagueProvider(),
         ),
 
 

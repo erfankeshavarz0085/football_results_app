@@ -7,6 +7,7 @@ import '../models/team_model.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../providers/team_provider.dart';
+import '../widgets/team_logo.dart';
 import 'match_details_screen.dart';
 
 class TeamDetailsScreen extends StatefulWidget {
@@ -115,8 +116,6 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _quickStats(details),
-        const SizedBox(height: 14),
         _infoCards(details.team),
         const SizedBox(height: 14),
         _coachCard(details.coach),
@@ -250,57 +249,6 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     );
   }
 
-  Widget _quickStats(TeamDetailsModel details) {
-    final wins = details.form.where((item) => item == 'W').length;
-    final draws = details.form.where((item) => item == 'D').length;
-    final losses = details.form.where((item) => item == 'L').length;
-
-    return GridView(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.45,
-      ),
-      children: [
-        _statTile('Wins', wins.toString(), Colors.greenAccent),
-        _statTile('Draws', draws.toString(), Colors.amber),
-        _statTile('Losses', losses.toString(), Colors.redAccent),
-      ],
-    );
-  }
-
-  Widget _statTile(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xff161b22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _recentFixtures(List<FixtureModel> fixtures) {
     return _sectionCard(
       title: 'Recent Matches',
@@ -340,7 +288,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
                           [
                             if (coach.nationality.isNotEmpty) coach.nationality,
                             if (coach.age != null) '${coach.age} years old',
-                          ].join(' • '),
+                          ].join(' - '),
                           style: const TextStyle(color: Colors.grey),
                         ),
                       ],
@@ -565,27 +513,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
   }
 
   Widget _teamLogo(String logo, double size) {
-    if (logo.isEmpty) {
-      return Icon(
-        Icons.shield_rounded,
-        color: Colors.greenAccent,
-        size: size,
-      );
-    }
-
-    return CachedNetworkImage(
-      imageUrl: logo,
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-      errorWidget: (_, __, ___) {
-        return Icon(
-          Icons.shield_rounded,
-          color: Colors.greenAccent,
-          size: size,
-        );
-      },
-    );
+    return TeamLogo(logoUrl: logo, size: size);
   }
 
   Widget _personPhoto(String photo, double size) {

@@ -438,10 +438,7 @@ class _FixturesTabState extends State<FixturesTab> {
   }
 
   String _cleanRound(String round) {
-    return round
-        .replaceAll('Regular Season - ', 'Matchweek ')
-        .replaceAll('Qualification - ', 'Qualification • ')
-        .replaceAll('League Stage - ', 'League Stage • ');
+    return round.replaceAll('Regular Season - ', 'Matchweek ');
   }
 
   String _roundGroupLabel(FixtureModel fixture) {

@@ -87,18 +87,6 @@ class ApiService {
     );
   }
 
-  Future<List<FixtureModel>> getWorldCupFixtures() async {
-    final url = Uri.parse(
-      '${AppConstants.baseUrl}/fixtures?league=1&season=2022&timezone=Asia/Tehran',
-    );
-
-    return _fetchFixturesWithCache(
-      cacheKey: 'world_cup_2022',
-      url: url,
-      cacheDuration: const Duration(minutes: 30),
-    );
-  }
-
   Future<List<FixtureModel>> _fetchFixturesWithCache({
     required String cacheKey,
     required Uri url,
@@ -161,10 +149,6 @@ class ApiService {
 
     if (cacheKey == 'live_fixtures') {
       return DemoFootballData.liveFixtures();
-    }
-
-    if (cacheKey == 'world_cup_2022') {
-      return DemoFootballData.worldCupFixtures();
     }
 
     if (cacheKey.startsWith('today_')) {
@@ -383,7 +367,7 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('API EXCEPTION: $e');
-      throw Exception('خطا در دریافت اطلاعات: $e');
+      throw Exception('Failed to load fixtures: $e');
     }
   }
 
@@ -436,7 +420,7 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('API EXCEPTION: $e');
-      throw Exception('خطا در دریافت جدول: $e');
+      throw Exception('Failed to load standings: $e');
     }
   }
   Future<MatchDetailModel?> getMatchDetails(int fixtureId) async {
@@ -498,7 +482,7 @@ class ApiService {
       }
 
       throw Exception(
-        'خطا در دریافت جزئیات بازی: $e',
+        'Failed to load match details: $e',
       );
     }
   }
@@ -569,7 +553,7 @@ class ApiService {
         return demoDetails;
       }
 
-      throw Exception('خطا در دریافت اطلاعات تیم: $e');
+      throw Exception('Failed to load team details: $e');
     }
   }
 
@@ -651,7 +635,7 @@ class ApiService {
         return DemoFootballData.searchTeams(trimmedQuery);
       }
 
-      throw Exception('خطا در جستجوی تیم‌ها: $e');
+      throw Exception('Failed to search teams: $e');
     }
   }
 
@@ -704,7 +688,7 @@ class ApiService {
         return DemoFootballData.searchLeagues(trimmedQuery);
       }
 
-      throw Exception('خطا در جستجوی لیگ‌ها: $e');
+      throw Exception('Failed to search leagues: $e');
     }
   }
 

@@ -539,7 +539,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_recentViewLabel(item.type)} • ${item.subtitle}',
+                    '${_recentViewLabel(item.type)} - ${item.subtitle}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
