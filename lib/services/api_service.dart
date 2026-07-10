@@ -17,6 +17,10 @@ class ApiService {
 
   static final Map<String, _CacheItem<List<FixtureModel>>> _fixtureCache = {};
   static final Map<String, _CacheItem<List<StandingModel>>> _standingsCache = {};
+  static final Map<String, _CacheItem<List<TeamModel>>> _teamSearchCache = {};
+  static final Map<String, _CacheItem<List<LeagueModel>>> _leagueSearchCache =
+      {};
+  static final Map<String, Future<http.Response>> _inFlightRequests = {};
   static DateTime? _lastRequestAt;
   static Future<void> _requestQueue = Future.value();
 
@@ -603,6 +607,14 @@ class ApiService {
       return [];
     }
 
+    final cacheKey = trimmedQuery.toLowerCase();
+    final cached = _teamSearchCache[cacheKey];
+
+    if (cached != null && !cached.isExpired(const Duration(minutes: 30))) {
+      debugPrint('TEAM SEARCH CACHE HIT: $cacheKey');
+      return cached.data;
+    }
+
     final url = Uri.parse(
       '${AppConstants.baseUrl}/teams?search=${Uri.encodeQueryComponent(trimmedQuery)}',
     );
@@ -610,7 +622,12 @@ class ApiService {
     try {
       final responseList = await _fetchResponseList(url);
 
-      return responseList.map((json) => TeamModel.fromJson(json)).toList();
+      final teams = responseList.map((json) {
+        return TeamModel.fromJson(json);
+      }).toList();
+      _teamSearchCache[cacheKey] = _CacheItem(data: teams);
+
+      return teams;
     } catch (e) {
       debugPrint('TEAM SEARCH ERROR: $e');
 
@@ -630,6 +647,14 @@ class ApiService {
       return [];
     }
 
+    final cacheKey = trimmedQuery.toLowerCase();
+    final cached = _leagueSearchCache[cacheKey];
+
+    if (cached != null && !cached.isExpired(const Duration(minutes: 30))) {
+      debugPrint('LEAGUE SEARCH CACHE HIT: $cacheKey');
+      return cached.data;
+    }
+
     final url = Uri.parse(
       '${AppConstants.baseUrl}/leagues?search=${Uri.encodeQueryComponent(trimmedQuery)}',
     );
@@ -637,7 +662,7 @@ class ApiService {
     try {
       final responseList = await _fetchResponseList(url);
 
-      return responseList.map((json) {
+      final leagues = responseList.map((json) {
         final league = json['league'] ?? {};
         final country = json['country'] ?? {};
         final seasons = json['seasons'] is List ? json['seasons'] as List : [];
@@ -653,6 +678,9 @@ class ApiService {
           fallbackIcon: Icons.emoji_events_rounded,
         );
       }).where((league) => league.id != 0).toList();
+      _leagueSearchCache[cacheKey] = _CacheItem(data: leagues);
+
+      return leagues;
     } catch (e) {
       debugPrint('LEAGUE SEARCH ERROR: $e');
 
@@ -720,6 +748,26 @@ class ApiService {
   Future<http.Response> _getWithRetry(Uri url) async {
     _ensureApiEnabled();
 
+    final requestKey = url.toString();
+    final inFlightRequest = _inFlightRequests[requestKey];
+
+    if (inFlightRequest != null) {
+      debugPrint('API IN-FLIGHT HIT: $url');
+      return inFlightRequest;
+    }
+
+    final request = _performGetWithRetry(url);
+    _inFlightRequests[requestKey] = request;
+
+    request.then(
+      (_) => _inFlightRequests.remove(requestKey),
+      onError: (_) => _inFlightRequests.remove(requestKey),
+    );
+
+    return request;
+  }
+
+  Future<http.Response> _performGetWithRetry(Uri url) async {
     const maxAttempts = 3;
 
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -730,7 +778,7 @@ class ApiService {
             .get(url, headers: _headers)
             .timeout(const Duration(seconds: 15));
       } catch (e) {
-        if (attempt == maxAttempts) {
+        if (attempt == maxAttempts || !_shouldRetryRequest(e)) {
           rethrow;
         }
 
@@ -740,6 +788,21 @@ class ApiService {
     }
 
     throw Exception('API request failed');
+  }
+
+  bool _shouldRetryRequest(Object error) {
+    final message = error.toString().toLowerCase();
+
+    if (message.contains('api is disabled') ||
+        message.contains('api key is missing') ||
+        message.contains('suspended') ||
+        message.contains('free plan') ||
+        message.contains('401') ||
+        message.contains('403')) {
+      return false;
+    }
+
+    return true;
   }
 
   void _ensureApiEnabled() {
