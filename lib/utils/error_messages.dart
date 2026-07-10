@@ -4,27 +4,29 @@ class ErrorMessages {
     final message = rawMessage.toLowerCase();
 
     if (message.contains('api is disabled')) {
-      return 'API Safe Mode is enabled. Turn API_ENABLED on in .env to load real data.';
+      return 'API Safe Mode is enabled. Turn API_ENABLED=true in .env when you want to use real API requests.';
     }
 
     if (message.contains('suspended')) {
-      return 'Your API-Football account is suspended. Check the dashboard or use a new API key.';
+      return 'Your API-Football account is suspended. Check the API dashboard or replace the API key.';
     }
 
     if (message.contains('free plan') ||
         message.contains('free plans') ||
-        message.contains('not available on the free plan')) {
-      return 'This date or season is not available on your free API plan. Try another nearby date.';
+        message.contains('not available on the free plan') ||
+        message.contains('not have access')) {
+      return 'This date or season is not available on the free API plan. Try a supported date or season.';
     }
 
     if (message.contains('timeout')) {
-      return 'The request timed out. Check your internet connection and try again.';
+      return 'The request timed out. Check your connection, then try again.';
     }
 
     if (message.contains('failed to fetch') ||
         message.contains('socketexception') ||
+        message.contains('clientexception') ||
         message.contains('network')) {
-      return 'Could not connect to the football API. Check your connection and try again.';
+      return 'Could not reach the football API. Check your connection, CORS/browser access, or try again.';
     }
 
     if (message.contains('api key is missing')) {
@@ -40,5 +42,19 @@ class ErrorMessages {
     }
 
     return 'Something went wrong while loading football data. Please try again.';
+  }
+
+  static bool isApiError(String message) {
+    final normalized = message.toLowerCase();
+
+    return normalized.contains('api') ||
+        normalized.contains('connect') ||
+        normalized.contains('connection') ||
+        normalized.contains('timeout') ||
+        normalized.contains('request') ||
+        normalized.contains('key') ||
+        normalized.contains('plan') ||
+        normalized.contains('suspended') ||
+        normalized.contains('fetch');
   }
 }

@@ -6,6 +6,7 @@ import '../models/fixture_model.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/fixture_provider.dart';
 import '../providers/recent_view_provider.dart';
+import '../utils/error_messages.dart';
 import '../widgets/empty_state_card.dart';
 import '../widgets/loading_widget.dart';
 import '../widgets/team_logo.dart';
@@ -462,16 +463,16 @@ class _LiveScreenState extends State<LiveScreen> {
   }
 
   Widget _messageBox(String text) {
-    final isError = text.toLowerCase().contains('api') ||
-        text.toLowerCase().contains('wrong') ||
-        text.toLowerCase().contains('connect') ||
-        text.toLowerCase().contains('timeout');
+    final isError = ErrorMessages.isApiError(text);
+    final provider = Provider.of<FixtureProvider>(context, listen: false);
 
     return EmptyStateCard(
       icon: isError ? Icons.cloud_off_rounded : Icons.sports_soccer_rounded,
       title: isError ? 'Could not load live matches' : 'No live matches',
       message: text,
       accentColor: isError ? Colors.redAccent : Colors.redAccent,
+      actionLabel: isError ? 'Retry' : null,
+      onAction: isError ? provider.loadLiveFixtures : null,
     );
   }
 

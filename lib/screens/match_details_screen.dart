@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/match_detail_model.dart';
 import '../providers/match_detail_provider.dart';
+import '../widgets/empty_state_card.dart';
 import '../widgets/team_logo.dart';
 import 'team_details_screen.dart';
 
@@ -49,16 +50,7 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
               child: CircularProgressIndicator(color: Colors.greenAccent),
             )
           : provider.errorMessage != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      provider.errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.redAccent),
-                    ),
-                  ),
-                )
+              ? _errorState(provider.errorMessage!)
               : match == null
                   ? const Center(
                       child: Text(
@@ -99,6 +91,24 @@ class _MatchDetailsScreenState extends State<MatchDetailsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _errorState(String message) {
+    final provider = Provider.of<MatchDetailProvider>(context, listen: false);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: EmptyStateCard(
+          icon: Icons.cloud_off_rounded,
+          title: 'Could not load match details',
+          message: message,
+          accentColor: Colors.redAccent,
+          actionLabel: 'Retry',
+          onAction: () => provider.loadMatchDetails(widget.fixtureId),
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../models/standing_model.dart';
 import '../../../providers/fixture_provider.dart';
+import '../../../widgets/empty_state_card.dart';
 import '../../../widgets/team_logo.dart';
 import '../../team_details_screen.dart';
 
@@ -23,6 +24,7 @@ class StandingsTab extends StatefulWidget {
 }
 
 class _StandingsTabState extends State<StandingsTab> {
+  String? selectedWorldCupGroup;
 
   @override
   void initState() {
@@ -41,30 +43,21 @@ class _StandingsTabState extends State<StandingsTab> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
-
     final provider = Provider.of<FixtureProvider>(context);
-
-    final standings =
-        provider.getStandingsForLeague(
-          widget.leagueId,
-          season: widget.season,
-        );
-
+    final standings = provider.getStandingsForLeague(
+      widget.leagueId,
+      season: widget.season,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
-
       body: Padding(
         padding: const EdgeInsets.all(12),
-
         child: Column(
           children: [
-
             if (provider.isStandingsLoading)
-
               const Expanded(
                 child: Center(
                   child: CircularProgressIndicator(
@@ -72,24 +65,11 @@ class _StandingsTabState extends State<StandingsTab> {
                   ),
                 ),
               )
-
-
             else if (provider.standingsErrorMessage != null)
-
               Expanded(
-                child: Center(
-                  child: Text(
-                    provider.standingsErrorMessage!,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                    ),
-                  ),
-                ),
+                child: _standingsError(provider.standingsErrorMessage!),
               )
-
-
             else if (standings.isEmpty)
-
               Expanded(
                 child: Center(
                   child: Text(
@@ -104,49 +84,70 @@ class _StandingsTabState extends State<StandingsTab> {
                   ),
                 ),
               )
-
-
             else
-
               Expanded(child: _standingsList(context, standings)),
-
           ],
         ),
       ),
     );
   }
 
-
-
   Widget _standingsList(BuildContext context, List<StandingModel> standings) {
     if (widget.leagueId != 1) {
       return ListView.builder(
         itemCount: standings.length,
         itemBuilder: (context, index) {
-          final team = standings[index];
-
-          return _standingCard(context, team);
+          return _standingCard(context, standings[index]);
         },
       );
     }
 
     final groupedStandings = _groupWorldCupStandings(standings);
+    final groups = groupedStandings.keys.toList();
+
+    if (groups.isEmpty) {
+      return const Center(
+        child: Text(
+          'No standings available',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    if (selectedWorldCupGroup == null ||
+        !groupedStandings.containsKey(selectedWorldCupGroup)) {
+      selectedWorldCupGroup = groups.first;
+    }
+
+    final currentGroup = selectedWorldCupGroup!;
+    final groupTeams = groupedStandings[currentGroup] ?? const <StandingModel>[];
 
     return ListView(
       children: [
-        ...groupedStandings.entries.map((entry) {
-          final groupTeams = entry.value.take(4).toList();
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _groupHeader(entry.key),
-              ...groupTeams.map((team) => _standingCard(context, team)),
-              const SizedBox(height: 6),
-            ],
-          );
-        }),
+        _groupSelector(currentGroup: currentGroup, groups: groups),
+        const SizedBox(height: 12),
+        ...groupTeams.take(4).map((team) => _standingCard(context, team)),
       ],
+    );
+  }
+
+  Widget _standingsError(String message) {
+    final provider = Provider.of<FixtureProvider>(context, listen: false);
+
+    return Center(
+      child: EmptyStateCard(
+        icon: Icons.cloud_off_rounded,
+        title: 'Could not load standings',
+        message: message,
+        accentColor: Colors.redAccent,
+        actionLabel: 'Retry',
+        onAction: () {
+          provider.loadLeagueStandings(
+            widget.leagueId,
+            season: widget.season,
+          );
+        },
+      ),
     );
   }
 
@@ -184,32 +185,115 @@ class _StandingsTabState extends State<StandingsTab> {
     return match.group(1)!.codeUnitAt(0);
   }
 
-  Widget _groupHeader(String groupName) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10, top: 4),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.table_chart_rounded,
-            color: Colors.greenAccent,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            groupName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+  Widget _groupSelector({
+    required String currentGroup,
+    required List<String> groups,
+  }) {
+    return InkWell(
+      onTap: () => _showGroupPicker(groups),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.table_chart_rounded,
+              color: Colors.greenAccent,
+              size: 18,
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                currentGroup,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.greenAccent,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _standingCard(BuildContext context, StandingModel team) {
+  void _showGroupPicker(List<String> groups) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xff0d1117),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text(
+                'Choose Group',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ...groups.map((group) {
+                final isSelected = group == selectedWorldCupGroup;
 
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.greenAccent.withValues(alpha: 0.12)
+                        : const Color(0xff161b22),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected
+                          ? Colors.greenAccent.withValues(alpha: 0.35)
+                          : Colors.white10,
+                    ),
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      group,
+                      style: TextStyle(
+                        color: isSelected ? Colors.greenAccent : Colors.white,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            color: Colors.greenAccent,
+                          )
+                        : null,
+                    onTap: () {
+                      setState(() => selectedWorldCupGroup = group);
+                      Navigator.pop(context);
+                    },
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _standingCard(BuildContext context, StandingModel team) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -225,309 +309,111 @@ class _StandingsTabState extends State<StandingsTab> {
       },
       borderRadius: BorderRadius.circular(18),
       child: Container(
-
-      margin: const EdgeInsets.only(
-        bottom: 12,
-      ),
-
-
-      padding: const EdgeInsets.all(12),
-
-
-      decoration: BoxDecoration(
-
-        color: const Color(0xff161b22),
-
-        borderRadius:
-            BorderRadius.circular(18),
-
-        border: Border.all(
-          color: Colors.white10,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
         ),
-
-      ),
-
-
-      child: Column(
-
-        children: [
-
-
-          Row(
-
-            children: [
-
-
-              Container(
-
-                width: 30,
-
-                alignment: Alignment.center,
-
-                child: Text(
-
-                  '${team.rank}',
-
-                  style: const TextStyle(
-
-                    color: Colors.white,
-
-                    fontWeight:
-                        FontWeight.bold,
-
-                    fontSize: 16,
-
-                  ),
-                ),
-              ),
-
-
-
-              const SizedBox(width: 8),
-
-
-
-              TeamLogo(logoUrl: team.teamLogo, size: 38),
-
-
-
-              const SizedBox(width: 12),
-
-
-
-              Expanded(
-
-                child: Text(
-
-                  team.teamName,
-
-                  maxLines: 1,
-
-                  overflow:
-                      TextOverflow.ellipsis,
-
-
-                  style: const TextStyle(
-
-                    color: Colors.white,
-
-                    fontWeight:
-                        FontWeight.bold,
-
-                    fontSize: 15,
-
-                  ),
-
-                ),
-
-              ),
-
-
-
-            ],
-          ),
-
-
-
-          const SizedBox(height: 14),
-
-
-
-          Container(
-
-            padding:
-                const EdgeInsets.symmetric(
-              vertical: 10,
-              horizontal: 6,
-            ),
-
-
-            decoration: BoxDecoration(
-
-              color:
-                  const Color(0xff0d1117),
-
-              borderRadius:
-                  BorderRadius.circular(12),
-
-            ),
-
-
-
-            child: Row(
-
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceAround,
-
-
+        child: Column(
+          children: [
+            Row(
               children: [
-
-
-                _statItem(
-                  'P',
-                  team.played,
-                ),
-
-
-                _statItem(
-                  'W',
-                  team.win,
-                ),
-
-
-                _statItem(
-                  'D',
-                  team.draw,
-                ),
-
-
-                _statItem(
-                  'L',
-                  team.lose,
-                ),
-
-
-                _statItem(
-                  'GF',
-                  team.goalsFor,
-                ),
-
-
-                _statItem(
-                  'GA',
-                  team.goalsAgainst,
-                ),
-
-
-                _statItem(
-                  'GD',
-                  team.goalDifference,
-                ),
-
-
-
-                Column(
-
-                  children: [
-
-                    const Text(
-
-                      'PTS',
-
-                      style:
-                          TextStyle(
-
-                        color:
-                            Colors.grey,
-
-                        fontSize: 10,
-
-                      ),
-
+                SizedBox(
+                  width: 30,
+                  child: Text(
+                    '${team.rank}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-
-
-                    Text(
-
-                      '${team.points}',
-
-
-                      style:
-                          const TextStyle(
-
-                        color:
-                            Colors.greenAccent,
-
-                        fontWeight:
-                            FontWeight.bold,
-
-                        fontSize: 15,
-
-                      ),
-
-                    ),
-
-                  ],
-
+                  ),
                 ),
-
-
+                const SizedBox(width: 8),
+                TeamLogo(logoUrl: team.teamLogo, size: 38),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    team.teamName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
               ],
-
             ),
-
-          ),
-
-
-        ],
-
-      ),
-
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff0d1117),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _statItem('P', team.played),
+                  _statItem('W', team.win),
+                  _statItem('D', team.draw),
+                  _statItem('L', team.lose),
+                  _statItem('GF', team.goalsFor),
+                  _statItem('GA', team.goalsAgainst),
+                  _statItem('GD', team.goalDifference),
+                  Column(
+                    children: [
+                      const Text(
+                        'PTS',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 10,
+                        ),
+                      ),
+                      Text(
+                        '${team.points}',
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
-
   }
 
-
-
-
-  Widget _statItem(
-      String title,
-      int value,
-      ) {
-
-
+  Widget _statItem(String title, int value) {
     return Column(
-
       children: [
-
-
         Text(
-
           title,
-
-          style:
-              const TextStyle(
-
+          style: const TextStyle(
             color: Colors.grey,
-
             fontSize: 10,
-
           ),
-
         ),
-
-
-
-        const SizedBox(
-          height: 3,
-        ),
-
-
-
+        const SizedBox(height: 3),
         Text(
-
           '$value',
-
-          style:
-              const TextStyle(
-
+          style: const TextStyle(
             color: Colors.white,
-
             fontSize: 12,
-
-            fontWeight:
-                FontWeight.bold,
-
+            fontWeight: FontWeight.bold,
           ),
-
         ),
-
-
       ],
-
     );
-
   }
-
 }

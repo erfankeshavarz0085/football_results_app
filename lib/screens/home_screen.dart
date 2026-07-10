@@ -10,6 +10,7 @@ import '../providers/fixture_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../widgets/empty_state_card.dart';
 import '../widgets/loading_widget.dart';
+import '../utils/error_messages.dart';
 import 'favorites_screen.dart';
 import 'league_details/league_details_screen.dart';
 import 'leagues_screen.dart';
@@ -879,16 +880,16 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Widget _messageBox(String text) {
-    final isError = text.toLowerCase().contains('api') ||
-        text.toLowerCase().contains('wrong') ||
-        text.toLowerCase().contains('connect') ||
-        text.toLowerCase().contains('timeout');
+    final isError = ErrorMessages.isApiError(text);
+    final provider = Provider.of<FixtureProvider>(context, listen: false);
 
     return EmptyStateCard(
       icon: isError ? Icons.cloud_off_rounded : Icons.event_busy_rounded,
       title: isError ? 'Could not load fixtures' : 'No fixtures',
       message: text,
       accentColor: isError ? Colors.redAccent : Colors.greenAccent,
+      actionLabel: isError ? 'Retry' : null,
+      onAction: isError ? provider.refreshSelectedDate : null,
     );
   }
 

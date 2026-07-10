@@ -7,6 +7,7 @@ import '../../../providers/favorite_provider.dart';
 import '../../../providers/recent_view_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../utils/error_messages.dart';
+import '../../../widgets/empty_state_card.dart';
 import '../../../widgets/team_logo.dart';
 import '../../match_details_screen.dart';
 
@@ -51,13 +52,16 @@ class _FixturesTabState extends State<FixturesTab> {
         }
 
         if (snapshot.hasError) {
-          return _messageBox(ErrorMessages.fromException(snapshot.error!));
+          return _messageBox(
+            ErrorMessages.fromException(snapshot.error!),
+            onRetry: _reloadFixtures,
+          );
         }
 
         final fixtures = snapshot.data ?? [];
 
         if (fixtures.isEmpty) {
-          return _messageBox('مسابقه‌ای برای این لیگ پیدا نشد');
+          return _messageBox('No fixtures found for this league');
         }
 
         final groupedFixtures = _groupFixtures(fixtures);
@@ -118,6 +122,16 @@ class _FixturesTabState extends State<FixturesTab> {
           (a, b) => _roundSortValue(a.key).compareTo(_roundSortValue(b.key)),
         ),
     );
+  }
+
+  void _reloadFixtures() {
+    setState(() {
+      selectedRound = null;
+      fixturesFuture = ApiService().getLeagueFixtures(
+        widget.leagueId,
+        season: widget.season,
+      );
+    });
   }
 
   Widget _roundSelector({
@@ -540,19 +554,19 @@ class _FixturesTabState extends State<FixturesTab> {
     );
   }
 
-  Widget _messageBox(String text) {
+  Widget _messageBox(String text, {VoidCallback? onRetry}) {
+    final isError = ErrorMessages.isApiError(text);
+
     return Center(
-      child: Container(
-        margin: const EdgeInsets.all(16),
+      child: Padding(
         padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: const Color(0xff161b22),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(color: Colors.grey),
+        child: EmptyStateCard(
+          icon: isError ? Icons.cloud_off_rounded : Icons.event_busy_rounded,
+          title: isError ? 'Could not load fixtures' : 'No fixtures',
+          message: text,
+          accentColor: isError ? Colors.redAccent : Colors.greenAccent,
+          actionLabel: isError ? 'Retry' : null,
+          onAction: isError ? onRetry : null,
         ),
       ),
     );

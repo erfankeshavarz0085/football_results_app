@@ -10,6 +10,7 @@ import '../models/team_model.dart';
 import '../providers/app_settings_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../providers/team_provider.dart';
+import '../utils/error_messages.dart';
 import '../widgets/empty_state_card.dart';
 import 'match_details_screen.dart';
 import 'league_details/league_details_screen.dart';
@@ -650,7 +651,10 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     if (provider.searchErrorMessage != null && trimmedQuery.length >= 3) {
-      return _messageBox(provider.searchErrorMessage!);
+      return _messageBox(
+        provider.searchErrorMessage!,
+        onRetry: () => provider.searchTeams(trimmedQuery),
+      );
     }
 
     if (teams.isEmpty) {
@@ -677,7 +681,10 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     if (provider.leagueSearchErrorMessage != null && trimmedQuery.length >= 3) {
-      return _messageBox(provider.leagueSearchErrorMessage!);
+      return _messageBox(
+        provider.leagueSearchErrorMessage!,
+        onRetry: () => provider.searchLeagues(trimmedQuery),
+      );
     }
 
     if (leagues.isEmpty) {
@@ -852,11 +859,8 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _messageBox(String text) {
-    final isError = text.toLowerCase().contains('api') ||
-        text.toLowerCase().contains('wrong') ||
-        text.toLowerCase().contains('connect') ||
-        text.toLowerCase().contains('timeout');
+  Widget _messageBox(String text, {VoidCallback? onRetry}) {
+    final isError = ErrorMessages.isApiError(text);
 
     return Padding(
       padding: const EdgeInsets.only(top: 32),
@@ -865,6 +869,8 @@ class _SearchScreenState extends State<SearchScreen> {
         title: isError ? 'Search unavailable' : 'No results',
         message: text,
         accentColor: isError ? Colors.redAccent : Colors.greenAccent,
+        actionLabel: isError ? 'Retry' : null,
+        onAction: isError ? onRetry : null,
       ),
     );
   }

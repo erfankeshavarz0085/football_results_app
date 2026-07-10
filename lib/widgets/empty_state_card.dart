@@ -5,6 +5,8 @@ class EmptyStateCard extends StatelessWidget {
   final String title;
   final String message;
   final Color accentColor;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   const EmptyStateCard({
     super.key,
@@ -12,6 +14,8 @@ class EmptyStateCard extends StatelessWidget {
     required this.title,
     required this.message,
     this.accentColor = Colors.greenAccent,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -50,6 +54,25 @@ class EmptyStateCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.grey, height: 1.4),
           ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 14),
+            TextButton.icon(
+              onPressed: onAction,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(actionLabel!),
+              style: TextButton.styleFrom(
+                foregroundColor: accentColor,
+                backgroundColor: accentColor.withValues(alpha: 0.08),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

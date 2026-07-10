@@ -7,6 +7,7 @@ import '../models/team_model.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../providers/team_provider.dart';
+import '../widgets/empty_state_card.dart';
 import '../widgets/team_logo.dart';
 import 'match_details_screen.dart';
 
@@ -576,10 +577,18 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.redAccent),
+        child: EmptyStateCard(
+          icon: Icons.cloud_off_rounded,
+          title: 'Could not load team details',
+          message: text,
+          accentColor: Colors.redAccent,
+          actionLabel: 'Retry',
+          onAction: () {
+            Provider.of<TeamProvider>(
+              context,
+              listen: false,
+            ).loadTeamDetails(widget.teamId);
+          },
         ),
       ),
     );
