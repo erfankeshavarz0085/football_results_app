@@ -10,7 +10,7 @@ class AppSettingsProvider extends ChangeNotifier {
   bool showFavoritesOnHome = true;
   bool showRecentlyViewedInSearch = true;
   bool showMatchAlertControls = true;
-  bool demoFallbackEnabled = true;
+  bool demoFallbackEnabled = false;
   bool isLoaded = false;
 
   AppSettingsProvider() {
@@ -23,7 +23,7 @@ class AppSettingsProvider extends ChangeNotifier {
     showFavoritesOnHome = prefs.getBool(_showFavoritesHomeKey) ?? true;
     showRecentlyViewedInSearch = prefs.getBool(_showRecentSearchKey) ?? true;
     showMatchAlertControls = prefs.getBool(_showMatchAlertsKey) ?? true;
-    demoFallbackEnabled = prefs.getBool(_demoFallbackKey) ?? true;
+    demoFallbackEnabled = prefs.getBool(_demoFallbackKey) ?? false;
     isLoaded = true;
 
     notifyListeners();

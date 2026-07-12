@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/constants.dart';
 
 class LeagueModel {
   final int id;
@@ -8,6 +9,7 @@ class LeagueModel {
   final int apiSeason;
   final String logoUrl;
   final IconData fallbackIcon;
+  final List<int> availableSeasons;
 
   const LeagueModel({
     required this.id,
@@ -17,6 +19,7 @@ class LeagueModel {
     required this.apiSeason,
     required this.logoUrl,
     required this.fallbackIcon,
+    this.availableSeasons = const [],
   });
 
   Map<String, dynamic> toOverviewMap() {
@@ -28,18 +31,19 @@ class LeagueModel {
       'apiSeason': apiSeason,
       'logoUrl': logoUrl,
       'icon': fallbackIcon,
+      'availableSeasons': availableSeasons,
     };
   }
 }
 
 class LeagueCatalog {
-  static const List<LeagueModel> topLeagues = [
+  static List<LeagueModel> get topLeagues => [
     LeagueModel(
       id: 39,
       name: 'Premier League',
       country: 'England',
-      season: '2024/2025',
-      apiSeason: 2024,
+      season: AppConstants.currentSeasonLabel,
+      apiSeason: AppConstants.currentSeason,
       logoUrl: 'https://media.api-sports.io/football/leagues/39.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -47,8 +51,8 @@ class LeagueCatalog {
       id: 140,
       name: 'La Liga',
       country: 'Spain',
-      season: '2024/2025',
-      apiSeason: 2024,
+      season: AppConstants.currentSeasonLabel,
+      apiSeason: AppConstants.currentSeason,
       logoUrl: 'https://media.api-sports.io/football/leagues/140.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -56,8 +60,8 @@ class LeagueCatalog {
       id: 135,
       name: 'Serie A',
       country: 'Italy',
-      season: '2024/2025',
-      apiSeason: 2024,
+      season: AppConstants.currentSeasonLabel,
+      apiSeason: AppConstants.currentSeason,
       logoUrl: 'https://media.api-sports.io/football/leagues/135.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -65,8 +69,8 @@ class LeagueCatalog {
       id: 78,
       name: 'Bundesliga',
       country: 'Germany',
-      season: '2024/2025',
-      apiSeason: 2024,
+      season: AppConstants.currentSeasonLabel,
+      apiSeason: AppConstants.currentSeason,
       logoUrl: 'https://media.api-sports.io/football/leagues/78.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -74,8 +78,8 @@ class LeagueCatalog {
       id: 61,
       name: 'Ligue 1',
       country: 'France',
-      season: '2024/2025',
-      apiSeason: 2024,
+      season: AppConstants.currentSeasonLabel,
+      apiSeason: AppConstants.currentSeason,
       logoUrl: 'https://media.api-sports.io/football/leagues/61.png',
       fallbackIcon: Icons.sports_soccer,
     ),
@@ -83,8 +87,8 @@ class LeagueCatalog {
       id: 2,
       name: 'Champions League',
       country: 'Europe',
-      season: '2024/2025',
-      apiSeason: 2024,
+      season: AppConstants.currentSeasonLabel,
+      apiSeason: AppConstants.currentSeason,
       logoUrl: 'https://media.api-sports.io/football/leagues/2.png',
       fallbackIcon: Icons.emoji_events_rounded,
     ),
@@ -110,8 +114,8 @@ class LeagueCatalog {
       id: id,
       name: fallbackName,
       country: 'Unknown',
-      season: '2024/2025',
-      apiSeason: 2024,
+      season: AppConstants.currentSeasonLabel,
+      apiSeason: AppConstants.currentSeason,
       logoUrl: 'https://media.api-sports.io/football/leagues/$id.png',
       fallbackIcon: Icons.emoji_events_rounded,
     );

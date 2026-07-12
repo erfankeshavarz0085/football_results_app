@@ -4,6 +4,7 @@ import '../models/fixture_model.dart';
 import '../models/standing_model.dart';
 import '../services/api_service.dart';
 import '../utils/error_messages.dart';
+import '../utils/constants.dart';
 
 class FixtureProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -86,8 +87,9 @@ class FixtureProvider extends ChangeNotifier {
 
   Future<void> loadLeagueStandings(
     int leagueId, {
-    int season = 2024,
+    int? season,
   }) async {
+    season ??= AppConstants.currentSeason;
     isStandingsLoading = true;
     standingsErrorMessage = null;
     notifyListeners();
@@ -108,8 +110,9 @@ class FixtureProvider extends ChangeNotifier {
 
   List<StandingModel> getStandingsForLeague(
     int leagueId, {
-    int season = 2024,
+    int? season,
   }) {
+    season ??= AppConstants.currentSeason;
     return standingsByLeague[_standingsKey(leagueId, season)] ?? [];
   }
 

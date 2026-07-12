@@ -11,6 +11,7 @@ import '../providers/app_settings_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../providers/team_provider.dart';
 import '../utils/error_messages.dart';
+import '../utils/constants.dart';
 import '../widgets/empty_state_card.dart';
 import 'match_details_screen.dart';
 import 'league_details/league_details_screen.dart';
@@ -594,8 +595,8 @@ class _SearchScreenState extends State<SearchScreen> {
             id: item.id,
             name: item.title,
             country: item.subtitle,
-            season: (item.season ?? 2024).toString(),
-            apiSeason: item.season ?? 2024,
+            season: (item.season ?? AppConstants.currentSeason).toString(),
+            apiSeason: item.season ?? AppConstants.currentSeason,
             logoUrl: item.imageUrl,
             fallbackIcon: Icons.emoji_events_rounded,
           ),

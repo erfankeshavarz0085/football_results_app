@@ -56,8 +56,9 @@ Create a `.env` file in the project root. Use `.env.example` as the template:
 ```env
 API_KEY=your_api_football_key_here
 API_ENABLED=true
-API_DEMO_FALLBACK_ENABLED=true
-API_REQUEST_INTERVAL_MS=1500
+API_DEMO_FALLBACK_ENABLED=false
+API_REQUEST_INTERVAL_MS=250
+API_DEFAULT_SEASON=
 API_DEMO_FIXTURE_DATE=2024-07-14
 ```
 
@@ -65,8 +66,8 @@ Important:
 
 - Keep `.env` private and do not commit real API keys.
 - Set `API_ENABLED=false` when you want to avoid real API requests.
-- Keep `API_DEMO_FALLBACK_ENABLED=true` for presentation mode or API outage
-  testing.
+- Keep `API_DEMO_FALLBACK_ENABLED=false` in production. Enable it only for
+  explicit offline presentation testing.
 
 ## Running The App
 

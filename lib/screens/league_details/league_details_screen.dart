@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/league_model.dart';
 import '../../providers/favorite_provider.dart';
 import '../../providers/recent_view_provider.dart';
+import '../../services/api_service.dart';
 import 'tabs/fixtures_tab.dart';
 import 'tabs/history_tab.dart';
 import 'tabs/overview_tab.dart';
@@ -28,22 +29,50 @@ class LeagueDetailsScreen extends StatefulWidget {
 
 class _LeagueDetailsScreenState extends State<LeagueDetailsScreen> {
   bool _didSaveRecentView = false;
+  late LeagueModel _league;
+  late int _selectedSeason;
+
+  @override
+  void initState() {
+    super.initState();
+    _league =
+        widget.initialLeague ??
+        LeagueCatalog.byId(widget.leagueId, widget.leagueName);
+    _selectedSeason = _league.apiSeason;
+    _loadCompleteLeague();
+  }
+
+  Future<void> _loadCompleteLeague() async {
+    try {
+      final league = await ApiService().getLeague(widget.leagueId);
+      if (!mounted || league == null) return;
+      setState(() {
+        _league = league;
+        if (!league.availableSeasons.contains(_selectedSeason)) {
+          _selectedSeason = league.apiSeason;
+        }
+      });
+    } catch (_) {
+      // The initial league remains usable if season metadata cannot be refreshed.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final league = widget.initialLeague ??
-        LeagueCatalog.byId(widget.leagueId, widget.leagueName);
+    final league = _league;
     final info = league.toOverviewMap();
 
     if (!_didSaveRecentView) {
       _didSaveRecentView = true;
+      final recentViewProvider = Provider.of<RecentViewProvider>(
+        context,
+        listen: false,
+      );
+
       Future.microtask(() {
         if (!mounted) return;
 
-        Provider.of<RecentViewProvider>(
-          context,
-          listen: false,
-        ).addLeague(league);
+        recentViewProvider.addLeague(league);
       });
     }
 
@@ -71,18 +100,28 @@ class _LeagueDetailsScreenState extends State<LeagueDetailsScreen> {
                   children: [
                     OverviewTab(leagueInfo: info),
                     FixturesTab(
+                      key: ValueKey(
+                        'fixtures-${widget.leagueId}-$_selectedSeason',
+                      ),
                       leagueId: widget.leagueId,
                       leagueName: widget.leagueName,
-                      season: league.apiSeason,
+                      season: _selectedSeason,
                     ),
                     StandingsTab(
+                      key: ValueKey(
+                        'standings-${widget.leagueId}-$_selectedSeason',
+                      ),
                       leagueId: widget.leagueId,
                       leagueName: widget.leagueName,
-                      season: league.apiSeason,
+                      season: _selectedSeason,
                     ),
                     HistoryTab(
+                      key: ValueKey(
+                        'history-${widget.leagueId}-${league.availableSeasons.length}',
+                      ),
                       leagueId: widget.leagueId,
                       leagueName: widget.leagueName,
+                      seasons: league.availableSeasons,
                     ),
                   ],
                 ),
@@ -141,11 +180,9 @@ class _LeagueDetailsScreenState extends State<LeagueDetailsScreen> {
             child: CachedNetworkImage(
               imageUrl: info['logoUrl'],
               fit: BoxFit.contain,
-              errorWidget: (_, __, ___) => Icon(
-                info['icon'],
-                color: Colors.black,
-                size: 36,
-              ),
+              errorWidget:
+                  (_, __, ___) =>
+                      Icon(info['icon'], color: Colors.black, size: 36),
             ),
           ),
           const SizedBox(height: 12),
@@ -160,12 +197,39 @@ class _LeagueDetailsScreenState extends State<LeagueDetailsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            '${info['country']} • Season ${info['season']}',
+            '${info['country']} • Season $_selectedSeason',
             style: const TextStyle(color: Colors.white70),
           ),
+          if (league.availableSeasons.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value:
+                    league.availableSeasons.contains(_selectedSeason)
+                        ? _selectedSeason
+                        : null,
+                hint: const Text('Select season'),
+                dropdownColor: const Color(0xff161b22),
+                iconEnabledColor: Colors.greenAccent,
+                style: const TextStyle(color: Colors.white),
+                items:
+                    league.availableSeasons
+                        .map(
+                          (season) => DropdownMenuItem(
+                            value: season,
+                            child: Text('$season/${season + 1}'),
+                          ),
+                        )
+                        .toList(),
+                onChanged: (season) {
+                  if (season == null || season == _selectedSeason) return;
+                  setState(() => _selectedSeason = season);
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
-
 }

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/fixture_model.dart';
+import '../models/league_champion_model.dart';
 import '../models/league_model.dart';
 import '../models/standing_model.dart';
 import '../models/team_model.dart';
@@ -15,17 +16,18 @@ class ApiService {
   static const String _persistentCachePrefix = 'api_cache';
 
   static final Map<String, _CacheItem<List<FixtureModel>>> _fixtureCache = {};
-  static final Map<String, _CacheItem<List<StandingModel>>> _standingsCache = {};
+  static final Map<String, _CacheItem<List<StandingModel>>> _standingsCache =
+      {};
   static final Map<String, _CacheItem<List<TeamModel>>> _teamSearchCache = {};
   static final Map<String, _CacheItem<List<LeagueModel>>> _leagueSearchCache =
       {};
+  static _CacheItem<List<LeagueModel>>? _currentLeaguesCache;
   static final Map<String, Future<http.Response>> _inFlightRequests = {};
   static DateTime? _lastRequestAt;
   static Future<void> _requestQueue = Future.value();
+  static ApiUsage? latestUsage;
 
-  Map<String, String> get _headers => {
-        'x-apisports-key': AppConstants.apiKey,
-      };
+  Map<String, String> get _headers => {'x-apisports-key': AppConstants.apiKey};
 
   Future<List<FixtureModel>> getTodayFixtures() async {
     return getFixturesByDate(DateTime.now());
@@ -59,8 +61,9 @@ class ApiService {
 
   Future<List<FixtureModel>> getLeagueFixtures(
     int leagueId, {
-    int season = 2024,
+    int? season,
   }) async {
+    season ??= AppConstants.currentSeason;
     final url = Uri.parse(
       '${AppConstants.baseUrl}/fixtures?league=$leagueId&season=$season&timezone=Asia/Tehran',
     );
@@ -74,8 +77,9 @@ class ApiService {
 
   Future<List<StandingModel>> getLeagueStandings(
     int leagueId, {
-    int season = 2024,
+    int? season,
   }) async {
+    season ??= AppConstants.currentSeason;
     final url = Uri.parse(
       '${AppConstants.baseUrl}/standings?league=$leagueId&season=$season',
     );
@@ -177,8 +181,9 @@ class ApiService {
       return const [];
     }
 
-    final leagueMatch =
-        RegExp(r'^standings(?:_v\d+)?_(\d+)_season_').firstMatch(cacheKey);
+    final leagueMatch = RegExp(
+      r'^standings(?:_v\d+)?_(\d+)_season_',
+    ).firstMatch(cacheKey);
 
     if (leagueMatch == null) {
       return const [];
@@ -282,14 +287,12 @@ class ApiService {
       return null;
     }
 
-    final fixtures = rawData.data.map((json) {
-      return FixtureModel.fromJson(json);
-    }).toList();
+    final fixtures =
+        rawData.data.map((json) {
+          return FixtureModel.fromJson(json);
+        }).toList();
 
-    return _CacheItem(
-      data: fixtures,
-      createdAt: rawData.createdAt,
-    );
+    return _CacheItem(data: fixtures, createdAt: rawData.createdAt);
   }
 
   Future<_CacheItem<List<StandingModel>>?> _readStandingPersistentCache(
@@ -301,14 +304,12 @@ class ApiService {
       return null;
     }
 
-    final standings = rawData.data.map((json) {
-      return StandingModel.fromJson(json);
-    }).toList();
+    final standings =
+        rawData.data.map((json) {
+          return StandingModel.fromJson(json);
+        }).toList();
 
-    return _CacheItem(
-      data: standings,
-      createdAt: rawData.createdAt,
-    );
+    return _CacheItem(data: standings, createdAt: rawData.createdAt);
   }
 
   Future<_PersistentCacheData?> _readPersistentCache(String cacheKey) async {
@@ -328,14 +329,12 @@ class ApiService {
         return null;
       }
 
-      final data = rawData.whereType<Map>().map((item) {
-        return Map<String, dynamic>.from(item);
-      }).toList();
+      final data =
+          rawData.whereType<Map>().map((item) {
+            return Map<String, dynamic>.from(item);
+          }).toList();
 
-      return _PersistentCacheData(
-        createdAt: createdAt,
-        data: data,
-      );
+      return _PersistentCacheData(createdAt: createdAt, data: data);
     } catch (e) {
       debugPrint('PERSISTENT CACHE READ ERROR: $cacheKey $e');
       return null;
@@ -423,6 +422,7 @@ class ApiService {
       throw Exception('Failed to load standings: $e');
     }
   }
+
   Future<MatchDetailModel?> getMatchDetails(int fixtureId) async {
     final fixtureUrl = Uri.parse(
       '${AppConstants.baseUrl}/fixtures?id=$fixtureId',
@@ -453,17 +453,20 @@ class ApiService {
         _fetchOptionalResponseList(lineupsUrl, 'lineups'),
       ]);
 
-      final events = detailResults[0]
-          .map((json) => MatchEventModel.fromJson(json))
-          .toList();
+      final events =
+          detailResults[0]
+              .map((json) => MatchEventModel.fromJson(json))
+              .toList();
 
-      final statistics = detailResults[1]
-          .map((json) => MatchStatisticModel.fromJson(json))
-          .toList();
+      final statistics =
+          detailResults[1]
+              .map((json) => MatchStatisticModel.fromJson(json))
+              .toList();
 
-      final lineups = detailResults[2]
-          .map((json) => MatchLineupModel.fromJson(json))
-          .toList();
+      final lineups =
+          detailResults[2]
+              .map((json) => MatchLineupModel.fromJson(json))
+              .toList();
 
       return MatchDetailModel.fromJson(
         fixtureList[0],
@@ -481,18 +484,14 @@ class ApiService {
         return demoDetail;
       }
 
-      throw Exception(
-        'Failed to load match details: $e',
-      );
+      throw Exception('Failed to load match details: $e');
     }
   }
 
   Future<TeamDetailsModel?> getTeamDetails(int teamId) async {
-    const season = 2024;
+    final season = AppConstants.currentSeason;
 
-    final teamUrl = Uri.parse(
-      '${AppConstants.baseUrl}/teams?id=$teamId',
-    );
+    final teamUrl = Uri.parse('${AppConstants.baseUrl}/teams?id=$teamId');
 
     final fixturesUrl = Uri.parse(
       '${AppConstants.baseUrl}/fixtures?team=$teamId&season=$season&last=5&timezone=Asia/Tehran',
@@ -502,9 +501,7 @@ class ApiService {
       '${AppConstants.baseUrl}/players/squads?team=$teamId',
     );
 
-    final coachesUrl = Uri.parse(
-      '${AppConstants.baseUrl}/coachs?team=$teamId',
-    );
+    final coachesUrl = Uri.parse('${AppConstants.baseUrl}/coachs?team=$teamId');
 
     try {
       final teamResponse = await _fetchResponseList(teamUrl);
@@ -528,9 +525,8 @@ class ApiService {
         'team coach',
       );
 
-      final recentFixtures = fixturesResponse
-          .map((json) => FixtureModel.fromJson(json))
-          .toList();
+      final recentFixtures =
+          fixturesResponse.map((json) => FixtureModel.fromJson(json)).toList();
 
       final squad = _parseTeamSquad(squadResponse);
       final coach = _parseTeamCoach(coachesResponse);
@@ -621,9 +617,10 @@ class ApiService {
     try {
       final responseList = await _fetchResponseList(url);
 
-      final teams = responseList.map((json) {
-        return TeamModel.fromJson(json);
-      }).toList();
+      final teams =
+          responseList.map((json) {
+            return TeamModel.fromJson(json);
+          }).toList();
       _teamSearchCache[cacheKey] = _CacheItem(data: teams);
 
       return teams;
@@ -661,22 +658,11 @@ class ApiService {
     try {
       final responseList = await _fetchResponseList(url);
 
-      final leagues = responseList.map((json) {
-        final league = json['league'] ?? {};
-        final country = json['country'] ?? {};
-        final seasons = json['seasons'] is List ? json['seasons'] as List : [];
-        final season = _pickLeagueSeason(seasons);
-
-        return LeagueModel(
-          id: league['id'] ?? 0,
-          name: league['name'] ?? 'Unknown league',
-          country: country['name'] ?? 'Unknown',
-          season: season.toString(),
-          apiSeason: season,
-          logoUrl: league['logo'] ?? '',
-          fallbackIcon: Icons.emoji_events_rounded,
-        );
-      }).where((league) => league.id != 0).toList();
+      final leagues =
+          responseList
+              .map(_leagueFromJson)
+              .where((league) => league.id != 0)
+              .toList();
       _leagueSearchCache[cacheKey] = _CacheItem(data: leagues);
 
       return leagues;
@@ -692,22 +678,105 @@ class ApiService {
     }
   }
 
-  int _pickLeagueSeason(List seasons) {
-    const latestFreeSeason = 2024;
-
-    if (seasons.isEmpty) {
-      return latestFreeSeason;
+  Future<List<LeagueModel>> getCurrentLeagues({
+    bool forceRefresh = false,
+  }) async {
+    final cached = _currentLeaguesCache;
+    if (!forceRefresh &&
+        cached != null &&
+        !cached.isExpired(const Duration(hours: 12))) {
+      return cached.data;
     }
 
-    final years = seasons
-        .whereType<Map>()
-        .map((season) => season['year'])
-        .whereType<int>()
-        .where((year) => year <= latestFreeSeason)
-        .toList();
+    final url = Uri.parse('${AppConstants.baseUrl}/leagues?current=true');
+    final response = await _fetchResponseList(url);
+    final leagues =
+        response.map(_leagueFromJson).where((league) => league.id != 0).toList()
+          ..sort((a, b) {
+            final country = a.country.compareTo(b.country);
+            return country != 0 ? country : a.name.compareTo(b.name);
+          });
+    _currentLeaguesCache = _CacheItem(data: leagues);
+    return leagues;
+  }
+
+  Future<LeagueModel?> getLeague(int leagueId) async {
+    final url = Uri.parse('${AppConstants.baseUrl}/leagues?id=$leagueId');
+    final response = await _fetchResponseList(url);
+    if (response.isEmpty) return null;
+    return _leagueFromJson(response.first);
+  }
+
+  Future<List<LeagueChampionModel>> getLeagueChampions(
+    int leagueId,
+    List<int> seasons,
+  ) async {
+    final champions = <LeagueChampionModel>[];
+    for (final season in seasons
+        .where((year) => year < AppConstants.currentSeason)
+        .take(12)) {
+      try {
+        final standings = await getLeagueStandings(leagueId, season: season);
+        if (standings.isEmpty) continue;
+        standings.sort((a, b) => a.rank.compareTo(b.rank));
+        final winner = standings.firstWhere(
+          (item) => item.rank == 1,
+          orElse: () => standings.first,
+        );
+        final runnerUp = standings.length > 1 ? standings[1].teamName : '';
+        champions.add(
+          LeagueChampionModel(
+            season: '$season/${season + 1}',
+            champion: winner.teamName,
+            runnerUp: runnerUp,
+          ),
+        );
+      } catch (e) {
+        debugPrint('CHAMPION HISTORY $leagueId/$season ERROR: $e');
+      }
+    }
+    return champions;
+  }
+
+  LeagueModel _leagueFromJson(dynamic json) {
+    final league = json['league'] ?? {};
+    final country = json['country'] ?? {};
+    final rawSeasons = json['seasons'] is List ? json['seasons'] as List : [];
+    final seasons =
+        rawSeasons
+            .whereType<Map>()
+            .map((item) => item['year'])
+            .whereType<int>()
+            .toSet()
+            .toList()
+          ..sort((a, b) => b.compareTo(a));
+    final season = _pickLeagueSeason(rawSeasons);
+    return LeagueModel(
+      id: league['id'] ?? 0,
+      name: league['name'] ?? 'Unknown league',
+      country: country['name'] ?? 'Unknown',
+      season: season.toString(),
+      apiSeason: season,
+      availableSeasons: seasons,
+      logoUrl: league['logo'] ?? '',
+      fallbackIcon: Icons.emoji_events_rounded,
+    );
+  }
+
+  int _pickLeagueSeason(List seasons) {
+    if (seasons.isEmpty) {
+      return AppConstants.currentSeason;
+    }
+
+    final years =
+        seasons
+            .whereType<Map>()
+            .map((season) => season['year'])
+            .whereType<int>()
+            .toList();
 
     if (years.isEmpty) {
-      return latestFreeSeason;
+      return AppConstants.currentSeason;
     }
 
     years.sort();
@@ -777,9 +846,16 @@ class ApiService {
       try {
         await _waitForRequestSlot();
 
-        return await http
+        final response = await http
             .get(url, headers: _headers)
             .timeout(const Duration(seconds: 15));
+        _captureUsage(response);
+
+        if (response.statusCode == 429 && attempt < maxAttempts) {
+          await Future.delayed(Duration(seconds: attempt * 2));
+          continue;
+        }
+        return response;
       } catch (e) {
         if (attempt == maxAttempts || !_shouldRetryRequest(e)) {
           rethrow;
@@ -791,6 +867,17 @@ class ApiService {
     }
 
     throw Exception('API request failed');
+  }
+
+  void _captureUsage(http.Response response) {
+    int? headerInt(String name) => int.tryParse(response.headers[name] ?? '');
+    latestUsage = ApiUsage(
+      dailyLimit: headerInt('x-ratelimit-requests-limit'),
+      dailyRemaining: headerInt('x-ratelimit-requests-remaining'),
+      minuteLimit: headerInt('x-ratelimit-limit'),
+      minuteRemaining: headerInt('x-ratelimit-remaining'),
+      updatedAt: DateTime.now(),
+    );
   }
 
   bool _shouldRetryRequest(Object error) {
@@ -826,12 +913,14 @@ class ApiService {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('demo_fallback_enabled') ?? true;
+    return prefs.getBool('demo_fallback_enabled') ?? false;
   }
 
   Future<void> _waitForRequestSlot() {
     final nextRequest = _requestQueue.then((_) async {
-      final interval = Duration(milliseconds: AppConstants.apiRequestIntervalMs);
+      final interval = Duration(
+        milliseconds: AppConstants.apiRequestIntervalMs,
+      );
       final lastRequestAt = _lastRequestAt;
 
       if (lastRequestAt != null) {
@@ -887,14 +976,28 @@ class ApiService {
   }
 }
 
+class ApiUsage {
+  final int? dailyLimit;
+  final int? dailyRemaining;
+  final int? minuteLimit;
+  final int? minuteRemaining;
+  final DateTime updatedAt;
+
+  const ApiUsage({
+    required this.dailyLimit,
+    required this.dailyRemaining,
+    required this.minuteLimit,
+    required this.minuteRemaining,
+    required this.updatedAt,
+  });
+}
+
 class _CacheItem<T> {
   final T data;
   final DateTime createdAt;
 
-  _CacheItem({
-    required this.data,
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  _CacheItem({required this.data, DateTime? createdAt})
+    : createdAt = createdAt ?? DateTime.now();
 
   bool isExpired(Duration duration) {
     return DateTime.now().difference(createdAt) > duration;
@@ -905,8 +1008,5 @@ class _PersistentCacheData {
   final DateTime createdAt;
   final List<Map<String, dynamic>> data;
 
-  _PersistentCacheData({
-    required this.createdAt,
-    required this.data,
-  });
+  _PersistentCacheData({required this.createdAt, required this.data});
 }

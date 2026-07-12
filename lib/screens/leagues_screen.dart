@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/league_model.dart';
+import '../providers/team_provider.dart';
 import 'league_details/league_details_screen.dart';
 
 class LeaguesScreen extends StatefulWidget {
@@ -14,9 +16,7 @@ class LeaguesScreen extends StatefulWidget {
 class _LeaguesScreenState extends State<LeaguesScreen> {
   String searchQuery = '';
 
-  final List<LeagueModel> leagues = LeagueCatalog.topLeagues;
-
-  List<LeagueModel> get filteredLeagues {
+  List<LeagueModel> filteredLeagues(List<LeagueModel> leagues) {
     if (searchQuery.trim().isEmpty) return leagues;
 
     final query = searchQuery.toLowerCase().trim();
@@ -30,8 +30,19 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        Provider.of<TeamProvider>(context, listen: false).loadCurrentLeagues();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final data = filteredLeagues;
+    final provider = Provider.of<TeamProvider>(context);
+    final data = filteredLeagues(provider.currentLeagues);
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
@@ -45,7 +56,16 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
             const SizedBox(height: 22),
             _sectionHeader(data.length),
             const SizedBox(height: 12),
-            if (data.isEmpty)
+            if (provider.isLeaguesLoading && data.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: CircularProgressIndicator(color: Colors.greenAccent),
+                ),
+              )
+            else if (provider.leaguesErrorMessage != null && data.isEmpty)
+              _errorBox(provider)
+            else if (data.isEmpty)
               _emptyBox()
             else
               ...data.map((league) => _leagueCard(context, league)),
@@ -60,10 +80,7 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xff132015),
-            Color(0xff111827),
-          ],
+          colors: [Color(0xff132015), Color(0xff111827)],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.25)),
@@ -117,16 +134,17 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
         hintText: 'Search leagues or countries...',
         hintStyle: const TextStyle(color: Colors.grey),
         prefixIcon: const Icon(Icons.search_rounded, color: Colors.greenAccent),
-        suffixIcon: searchQuery.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.grey),
-                onPressed: () {
-                  setState(() {
-                    searchQuery = '';
-                  });
-                },
-              )
-            : null,
+        suffixIcon:
+            searchQuery.isNotEmpty
+                ? IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                  onPressed: () {
+                    setState(() {
+                      searchQuery = '';
+                    });
+                  },
+                )
+                : null,
         filled: true,
         fillColor: const Color(0xff161b22),
         border: OutlineInputBorder(
@@ -142,7 +160,7 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
       children: [
         const Expanded(
           child: Text(
-            'Top Competitions',
+            'Current Competitions',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -167,7 +185,10 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
         border: Border.all(color: Colors.white10),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 10,
+        ),
         leading: Container(
           width: 48,
           height: 48,
@@ -181,10 +202,9 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
             child: CachedNetworkImage(
               imageUrl: league.logoUrl,
               fit: BoxFit.contain,
-              errorWidget: (_, __, ___) => Icon(
-                league.fallbackIcon,
-                color: Colors.black,
-              ),
+              errorWidget:
+                  (_, __, ___) =>
+                      Icon(league.fallbackIcon, color: Colors.black),
             ),
           ),
         ),
@@ -229,10 +249,12 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => LeagueDetailsScreen(
-                leagueId: league.id,
-                leagueName: league.name,
-              ),
+              builder:
+                  (_) => LeagueDetailsScreen(
+                    leagueId: league.id,
+                    leagueName: league.name,
+                    initialLeague: league,
+                  ),
             ),
           );
         },
@@ -249,10 +271,31 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
         border: Border.all(color: Colors.white10),
       ),
       child: const Center(
-        child: Text(
-          'No leagues found',
-          style: TextStyle(color: Colors.grey),
-        ),
+        child: Text('No leagues found', style: TextStyle(color: Colors.grey)),
+      ),
+    );
+  }
+
+  Widget _errorBox(TeamProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xff161b22),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Text(
+            provider.leaguesErrorMessage ?? 'Could not load leagues',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: () => provider.loadCurrentLeagues(forceRefresh: true),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }

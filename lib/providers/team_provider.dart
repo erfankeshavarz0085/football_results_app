@@ -19,6 +19,24 @@ class TeamProvider extends ChangeNotifier {
   bool isLeagueSearchLoading = false;
   String? leagueSearchErrorMessage;
   List<LeagueModel> leagueSearchResults = [];
+  List<LeagueModel> currentLeagues = [];
+  bool isLeaguesLoading = false;
+  String? leaguesErrorMessage;
+
+  Future<void> loadCurrentLeagues({bool forceRefresh = false}) async {
+    isLeaguesLoading = true;
+    leaguesErrorMessage = null;
+    notifyListeners();
+    try {
+      currentLeagues = await _apiService.getCurrentLeagues(
+        forceRefresh: forceRefresh,
+      );
+    } catch (e) {
+      leaguesErrorMessage = ErrorMessages.fromException(e);
+    }
+    isLeaguesLoading = false;
+    notifyListeners();
+  }
 
   Future<void> loadTeamDetails(int teamId) async {
     isLoading = true;
