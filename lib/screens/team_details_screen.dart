@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/fixture_model.dart';
@@ -39,10 +40,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
         listen: false,
       ).loadTeamDetails(widget.teamId);
 
-      Provider.of<RecentViewProvider>(
-        context,
-        listen: false,
-      ).addTeam(
+      Provider.of<RecentViewProvider>(context, listen: false).addTeam(
         id: widget.teamId,
         name: widget.fallbackName,
         logo: widget.fallbackLogo,
@@ -57,23 +55,22 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
-      appBar: AppBar(
-        title: const Text('Team Details'),
-      ),
-      body: provider.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.greenAccent),
-            )
-          : provider.errorMessage != null
+      appBar: AppBar(title: const Text('Team Details')),
+      body:
+          provider.isLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: Colors.greenAccent),
+              )
+              : provider.errorMessage != null
               ? _error(provider.errorMessage!)
               : provider.teamDetails == null
-                  ? const Center(
-                      child: Text(
-                        'No team data',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                  : _body(provider.teamDetails!),
+              ? const Center(
+                child: Text(
+                  'No team data',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
+              : _body(provider.teamDetails!),
     );
   }
 
@@ -127,27 +124,21 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
   Widget _matchesTab(List<FixtureModel> fixtures) {
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: [
-        _recentFixtures(fixtures),
-      ],
+      children: [_recentFixtures(fixtures)],
     );
   }
 
   Widget _lineupTab(TeamLineupSummaryModel? lineup) {
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: [
-        _lineupCard(lineup),
-      ],
+      children: [_lineupCard(lineup)],
     );
   }
 
   Widget _squadTab(List<TeamPlayerModel> squad) {
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: [
-        _squadCard(squad),
-      ],
+      children: [_squadCard(squad)],
     );
   }
 
@@ -168,7 +159,10 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
         children: [
           Row(
             children: [
-              _teamLogo(team.logo.isEmpty ? widget.fallbackLogo : team.logo, 66),
+              _teamLogo(
+                team.logo.isEmpty ? widget.fallbackLogo : team.logo,
+                66,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -266,38 +260,40 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
       icon: Icons.person_rounded,
       emptyText: 'No coach information available',
       isEmpty: coach == null,
-      children: coach == null
-          ? const []
-          : [
-              Row(
-                children: [
-                  _personPhoto(coach.photo, 46),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          coach.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+      children:
+          coach == null
+              ? const []
+              : [
+                Row(
+                  children: [
+                    _personPhoto(coach.photo, 46),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            coach.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          [
-                            if (coach.nationality.isNotEmpty) coach.nationality,
-                            if (coach.age != null) '${coach.age} years old',
-                          ].join(' - '),
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ],
+                          const SizedBox(height: 5),
+                          Text(
+                            [
+                              if (coach.nationality.isNotEmpty)
+                                coach.nationality,
+                              if (coach.age != null) '${coach.age} years old',
+                            ].join(' - '),
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
     );
   }
 
@@ -307,28 +303,29 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
       icon: Icons.account_tree_rounded,
       emptyText: 'No lineup information available',
       isEmpty: lineup == null,
-      children: lineup == null
-          ? const []
-          : [
-              Row(
-                children: [
-                  const Text(
-                    'Formation',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const Spacer(),
-                  Text(
-                    lineup.formation.isEmpty ? '-' : lineup.formation,
-                    style: const TextStyle(
-                      color: Colors.greenAccent,
-                      fontWeight: FontWeight.bold,
+      children:
+          lineup == null
+              ? const []
+              : [
+                Row(
+                  children: [
+                    const Text(
+                      'Formation',
+                      style: TextStyle(color: Colors.grey),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              ...lineup.startXI.take(11).map(_playerRow),
-            ],
+                    const Spacer(),
+                    Text(
+                      lineup.formation.isEmpty ? '-' : lineup.formation,
+                      style: const TextStyle(
+                        color: Colors.greenAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                ...lineup.startXI.take(11).map(_playerRow),
+              ],
     );
   }
 
@@ -379,12 +376,21 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                '${fixture.homeScore ?? "-"} - ${fixture.awayScore ?? "-"}',
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                children: [
+                  Text(
+                    '${fixture.homeScore ?? "-"} - ${fixture.awayScore ?? "-"}',
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatFixtureDate(fixture.date),
+                    style: const TextStyle(color: Colors.grey, fontSize: 10),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -445,6 +451,15 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
         ],
       ),
     );
+  }
+
+  String _formatFixtureDate(String rawDate) {
+    try {
+      final date = DateTime.parse(rawDate).toLocal();
+      return DateFormat('d MMM yyyy • HH:mm').format(date);
+    } catch (_) {
+      return '-';
+    }
   }
 
   Widget _sectionCard({
@@ -519,11 +534,7 @@ class _TeamDetailsScreenState extends State<TeamDetailsScreen> {
 
   Widget _personPhoto(String photo, double size) {
     if (photo.isEmpty) {
-      return Icon(
-        Icons.person_rounded,
-        color: Colors.greenAccent,
-        size: size,
-      );
+      return Icon(Icons.person_rounded, color: Colors.greenAccent, size: size);
     }
 
     return ClipOval(

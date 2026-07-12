@@ -10,6 +10,7 @@ import '../providers/fixture_provider.dart';
 import '../providers/recent_view_provider.dart';
 import '../widgets/empty_state_card.dart';
 import '../widgets/loading_widget.dart';
+import '../widgets/team_logo.dart';
 import '../utils/error_messages.dart';
 import 'favorites_screen.dart';
 import 'league_details/league_details_screen.dart';
@@ -53,11 +54,26 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedItemColor: Colors.greenAccent,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.emoji_events_rounded), label: 'Leagues'),
-          BottomNavigationBarItem(icon: Icon(Icons.sports_soccer), label: 'Live'),
-          BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite_rounded), label: 'Favorites'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.emoji_events_rounded),
+            label: 'Leagues',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.sports_soccer),
+            label: 'Live',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search_rounded),
+            label: 'Search',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_rounded),
+            label: 'Favorites',
+          ),
         ],
       ),
     );
@@ -125,10 +141,14 @@ class _HomeContentState extends State<HomeContent> {
               _todaySearchBox(),
               const SizedBox(height: 22),
               _sectionHeader(
-                title: provider.isSelectedDateToday
-                    ? "Today's Fixtures"
-                    : 'Fixtures',
-                subtitle: searchQuery.isEmpty ? 'Grouped by league' : 'Search results',
+                title:
+                    provider.isSelectedDateToday
+                        ? "Today's Fixtures"
+                        : 'Fixtures',
+                subtitle:
+                    searchQuery.isEmpty
+                        ? 'Grouped by league'
+                        : 'Search results',
               ),
               const SizedBox(height: 12),
               if (provider.isLoading)
@@ -221,9 +241,7 @@ class _HomeContentState extends State<HomeContent> {
   void _openSettings() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const SettingsScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
     );
   }
 
@@ -237,14 +255,15 @@ class _HomeContentState extends State<HomeContent> {
         hintText: 'Search fixtures...',
         hintStyle: const TextStyle(color: Colors.grey),
         prefixIcon: const Icon(Icons.search_rounded, color: Colors.greenAccent),
-        suffixIcon: searchQuery.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.grey),
-                onPressed: () {
-                  setState(() => searchQuery = '');
-                },
-              )
-            : null,
+        suffixIcon:
+            searchQuery.isNotEmpty
+                ? IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                  onPressed: () {
+                    setState(() => searchQuery = '');
+                  },
+                )
+                : null,
         filled: true,
         fillColor: const Color(0xff161b22),
         border: OutlineInputBorder(
@@ -281,7 +300,9 @@ class _HomeContentState extends State<HomeContent> {
                 child: Column(
                   children: [
                     Text(
-                      DateFormat('EEE, d MMM yyyy').format(provider.selectedDate),
+                      DateFormat(
+                        'EEE, d MMM yyyy',
+                      ).format(provider.selectedDate),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -321,7 +342,9 @@ class _HomeContentState extends State<HomeContent> {
           ),
           TextButton(
             onPressed:
-                provider.isSelectedDateToday ? null : provider.loadTodayFixtures,
+                provider.isSelectedDateToday
+                    ? null
+                    : provider.loadTodayFixtures,
             child: const Text('Today'),
           ),
           IconButton(
@@ -367,10 +390,7 @@ class _HomeContentState extends State<HomeContent> {
     await provider.loadFixturesForDate(pickedDate);
   }
 
-  Widget _sectionHeader({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _sectionHeader({required String title, required String subtitle}) {
     return Row(
       children: [
         Expanded(
@@ -440,9 +460,10 @@ class _HomeContentState extends State<HomeContent> {
 
     final widgets = <Widget>[];
 
-    final orderedImportantIds = importantLeagueIds
-        .where((id) => importantGroups.containsKey(id))
-        .toList();
+    final orderedImportantIds =
+        importantLeagueIds
+            .where((id) => importantGroups.containsKey(id))
+            .toList();
 
     for (final leagueId in orderedImportantIds) {
       final matches = importantGroups[leagueId] ?? [];
@@ -515,9 +536,8 @@ class _HomeContentState extends State<HomeContent> {
             logo: '',
             count: matches.length,
             isOther: true,
-            trailing: showAllOtherMatches
-                ? _collapseOtherMatchesButton()
-                : null,
+            trailing:
+                showAllOtherMatches ? _collapseOtherMatchesButton() : null,
           ),
           const SizedBox(height: 12),
           ...visibleMatches.map(
@@ -578,19 +598,21 @@ class _HomeContentState extends State<HomeContent> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white10),
           ),
-          child: logo.isNotEmpty && !isOther
-              ? CachedNetworkImage(
-                  imageUrl: logo,
-                  fit: BoxFit.contain,
-                  errorWidget: (_, __, ___) => const Icon(
-                    Icons.emoji_events_rounded,
+          child:
+              logo.isNotEmpty && !isOther
+                  ? CachedNetworkImage(
+                    imageUrl: logo,
+                    fit: BoxFit.contain,
+                    errorWidget:
+                        (_, __, ___) => const Icon(
+                          Icons.emoji_events_rounded,
+                          color: Colors.greenAccent,
+                        ),
+                  )
+                  : Icon(
+                    isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
                     color: Colors.greenAccent,
                   ),
-                )
-              : Icon(
-                  isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
-                  color: Colors.greenAccent,
-                ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -658,19 +680,17 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  Widget _showAllButton({
-    required int leagueId,
-    required String leagueName,
-  }) {
+  Widget _showAllButton({required int leagueId, required String leagueName}) {
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => LeagueDetailsScreen(
-              leagueId: leagueId,
-              leagueName: leagueName,
-            ),
+            builder:
+                (_) => LeagueDetailsScreen(
+                  leagueId: leagueId,
+                  leagueName: leagueName,
+                ),
           ),
         );
       },
@@ -713,107 +733,109 @@ class _HomeContentState extends State<HomeContent> {
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xff0d1117),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        children: [
-          if (showCompetitionInfo) ...[
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xff0d1117),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          children: [
+            if (showCompetitionInfo) ...[
+              Row(
+                children: [
+                  const Icon(
+                    Icons.emoji_events_rounded,
+                    color: Colors.greenAccent,
+                    size: 15,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${_displayCountry(fixture)} - ${fixture.leagueName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed:
+                        () => favoriteProvider.toggleFollowedMatch(fixture),
+                    icon: Icon(
+                      isFollowed
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: isFollowed ? Colors.amber : Colors.grey,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
             Row(
               children: [
-                const Icon(
-                  Icons.emoji_events_rounded,
-                  color: Colors.greenAccent,
-                  size: 15,
+                Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    children: [
+                      Text(
+                        _scoreOrTime(fixture),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatStatus(fixture.status),
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    '${_displayCountry(fixture)} - ${fixture.leagueName}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+                if (!showCompetitionInfo)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed:
+                        () => favoriteProvider.toggleFollowedMatch(fixture),
+                    icon: Icon(
+                      isFollowed
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: isFollowed ? Colors.amber : Colors.grey,
+                      size: 20,
                     ),
                   ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
-                  icon: Icon(
-                    isFollowed
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    color: isFollowed ? Colors.amber : Colors.grey,
-                    size: 20,
-                  ),
-                ),
               ],
             ),
-            const SizedBox(height: 10),
-          ],
-          Row(
-            children: [
-              Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Column(
-                  children: [
-                    Text(
-                      _scoreOrTime(fixture),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatStatus(fixture.status),
-                      style: const TextStyle(
-                        color: Colors.greenAccent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+            if (fixture.round.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                _cleanRound(fixture.round),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey, fontSize: 11),
               ),
-              Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
-              if (!showCompetitionInfo)
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
-                  icon: Icon(
-                    isFollowed
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    color: isFollowed ? Colors.amber : Colors.grey,
-                    size: 20,
-                  ),
-                ),
             ],
-          ),
-          if (fixture.round.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              _cleanRound(fixture.round),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey, fontSize: 11),
-            ),
           ],
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -849,24 +871,7 @@ class _HomeContentState extends State<HomeContent> {
   Widget _teamMini(String name, String logo) {
     return Column(
       children: [
-        if (logo.isNotEmpty)
-          CachedNetworkImage(
-            imageUrl: logo,
-            width: 34,
-            height: 34,
-            fit: BoxFit.contain,
-            errorWidget: (_, __, ___) => const Icon(
-              Icons.shield_rounded,
-              color: Colors.greenAccent,
-              size: 28,
-            ),
-          )
-        else
-          const Icon(
-            Icons.shield_rounded,
-            color: Colors.greenAccent,
-            size: 28,
-          ),
+        TeamLogo(logoUrl: logo, size: 38, whiteBackground: true),
         const SizedBox(height: 6),
         Text(
           name,
@@ -903,11 +908,7 @@ class _HomeContentState extends State<HomeContent> {
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.offline_bolt_rounded,
-            color: Colors.amberAccent,
-            size: 20,
-          ),
+          Icon(Icons.offline_bolt_rounded, color: Colors.amberAccent, size: 20),
           SizedBox(width: 10),
           Expanded(
             child: Text(
