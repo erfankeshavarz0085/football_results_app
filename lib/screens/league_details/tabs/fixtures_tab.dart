@@ -86,10 +86,7 @@ class _FixturesTabState extends State<FixturesTab> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _roundSelector(
-                currentRound: currentRound,
-                rounds: rounds,
-              ),
+              _roundSelector(currentRound: currentRound, rounds: rounds),
               const SizedBox(height: 14),
               _roundSummary(currentRound, currentFixtures.length),
               const SizedBox(height: 12),
@@ -104,9 +101,7 @@ class _FixturesTabState extends State<FixturesTab> {
     );
   }
 
-  Map<String, List<FixtureModel>> _groupFixtures(
-    List<FixtureModel> fixtures,
-  ) {
+  Map<String, List<FixtureModel>> _groupFixtures(List<FixtureModel> fixtures) {
     final Map<String, List<FixtureModel>> grouped = {};
 
     for (final fixture in fixtures) {
@@ -116,11 +111,15 @@ class _FixturesTabState extends State<FixturesTab> {
       grouped[round]!.add(fixture);
     }
 
+    for (final roundFixtures in grouped.values) {
+      roundFixtures.sort((a, b) => a.date.compareTo(b.date));
+    }
+
     return Map.fromEntries(
-      grouped.entries.toList()
-        ..sort(
-          (a, b) => _roundSortValue(a.key).compareTo(_roundSortValue(b.key)),
-        ),
+      grouped.entries.toList()..sort((a, b) {
+        final order = _roundSortValue(a.key).compareTo(_roundSortValue(b.key));
+        return order != 0 ? order : a.key.compareTo(b.key);
+      }),
     );
   }
 
@@ -150,10 +149,7 @@ class _FixturesTabState extends State<FixturesTab> {
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.calendar_month_rounded,
-              color: Colors.greenAccent,
-            ),
+            const Icon(Icons.calendar_month_rounded, color: Colors.greenAccent),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -212,14 +208,16 @@ class _FixturesTabState extends State<FixturesTab> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.greenAccent.withValues(alpha: 0.12)
-                        : const Color(0xff161b22),
+                    color:
+                        isSelected
+                            ? Colors.greenAccent.withValues(alpha: 0.12)
+                            : const Color(0xff161b22),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isSelected
-                          ? Colors.greenAccent.withValues(alpha: 0.35)
-                          : Colors.white10,
+                      color:
+                          isSelected
+                              ? Colors.greenAccent.withValues(alpha: 0.35)
+                              : Colors.white10,
                     ),
                   ),
                   child: ListTile(
@@ -231,12 +229,13 @@ class _FixturesTabState extends State<FixturesTab> {
                             isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
-                    trailing: isSelected
-                        ? const Icon(
-                            Icons.check_circle_rounded,
-                            color: Colors.greenAccent,
-                          )
-                        : null,
+                    trailing:
+                        isSelected
+                            ? const Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.greenAccent,
+                            )
+                            : null,
                     onTap: () {
                       setState(() {
                         selectedRound = round;
@@ -263,11 +262,7 @@ class _FixturesTabState extends State<FixturesTab> {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.sports_soccer,
-            color: Colors.greenAccent,
-            size: 22,
-          ),
+          const Icon(Icons.sports_soccer, color: Colors.greenAccent, size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -301,62 +296,59 @@ class _FixturesTabState extends State<FixturesTab> {
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xff161b22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              children: [
-                Text(
-                  _scoreOrTime(fixture),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Column(
+                children: [
+                  Text(
+                    _scoreOrTime(fixture),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  _formatStatus(fixture.status),
-                  style: TextStyle(
-                    color: _statusColor(fixture.status),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 5),
+                  Text(
+                    _formatStatus(fixture.status),
+                    style: TextStyle(
+                      color: _statusColor(fixture.status),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatDate(fixture.date),
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 10,
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDate(fixture.date),
+                    style: const TextStyle(color: Colors.grey, fontSize: 10),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
-            icon: Icon(
-              isFollowed ? Icons.star_rounded : Icons.star_border_rounded,
-              color: isFollowed ? Colors.amber : Colors.grey,
-              size: 20,
+            Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
+              icon: Icon(
+                isFollowed ? Icons.star_rounded : Icons.star_border_rounded,
+                color: isFollowed ? Colors.amber : Colors.grey,
+                size: 20,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -523,21 +515,37 @@ class _FixturesTabState extends State<FixturesTab> {
   };
 
   int _roundSortValue(String round) {
+    final normalized = round.toLowerCase();
     final groupMatch = RegExp(r'^Group ([A-H])$').firstMatch(round);
 
     if (groupMatch != null) {
-      return groupMatch.group(1)!.codeUnitAt(0);
+      return 1000 + groupMatch.group(1)!.codeUnitAt(0);
     }
 
     const knockoutOrder = {
-      'Round of 16': 200,
-      'Quarter-finals': 210,
-      'Semi-finals': 220,
-      '3rd Place Final': 230,
-      'Final': 240,
+      'Round of 16': 2000,
+      'Quarter-finals': 2010,
+      'Quarter-finals 1': 2011,
+      'Quarter-finals 2': 2012,
+      'Semi-finals': 2020,
+      '3rd Place Final': 2030,
+      'Final': 2040,
     };
 
-    return knockoutOrder[round] ?? 1000 + round.hashCode.abs();
+    final knockout = knockoutOrder[round];
+    if (knockout != null) return knockout;
+
+    final number = RegExp(r'(\d+)').firstMatch(round);
+
+    if (number != null &&
+        (normalized.contains('matchweek') ||
+            normalized.contains('regular season') ||
+            normalized.contains('round') ||
+            normalized.contains('week'))) {
+      return int.tryParse(number.group(1)!) ?? 0;
+    }
+
+    return 1500;
   }
 
   Widget _inlineMessage(String text) {

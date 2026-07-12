@@ -489,12 +489,10 @@ class ApiService {
   }
 
   Future<TeamDetailsModel?> getTeamDetails(int teamId) async {
-    final season = AppConstants.currentSeason;
-
     final teamUrl = Uri.parse('${AppConstants.baseUrl}/teams?id=$teamId');
 
     final fixturesUrl = Uri.parse(
-      '${AppConstants.baseUrl}/fixtures?team=$teamId&season=$season&last=5&timezone=Asia/Tehran',
+      '${AppConstants.baseUrl}/fixtures?team=$teamId&last=10&timezone=Asia/Tehran',
     );
 
     final squadUrl = Uri.parse(
@@ -575,7 +573,7 @@ class ApiService {
     int teamId,
     List<FixtureModel> fixtures,
   ) async {
-    for (final fixture in fixtures.take(5)) {
+    for (final fixture in fixtures.take(10)) {
       final lineupsUrl = Uri.parse(
         '${AppConstants.baseUrl}/fixtures/lineups?fixture=${fixture.id}',
       );

@@ -14,19 +14,43 @@ class LeaguesScreen extends StatefulWidget {
 }
 
 class _LeaguesScreenState extends State<LeaguesScreen> {
+  static const _featuredLeagueIds = <int>[
+    39, // Premier League
+    140, // La Liga
+    135, // Serie A
+    78, // Bundesliga
+    61, // Ligue 1
+    2, // UEFA Champions League
+    1, // FIFA World Cup
+    290, // Persian Gulf Pro League (Iran)
+  ];
+
   String searchQuery = '';
 
   List<LeagueModel> filteredLeagues(List<LeagueModel> leagues) {
-    if (searchQuery.trim().isEmpty) return leagues;
+    final sorted = [...leagues]..sort(_compareLeagues);
+    if (searchQuery.trim().isEmpty) return sorted;
 
     final query = searchQuery.toLowerCase().trim();
 
-    return leagues.where((league) {
+    return sorted.where((league) {
       final name = league.name.toLowerCase();
       final country = league.country.toLowerCase();
 
       return name.contains(query) || country.contains(query);
     }).toList();
+  }
+
+  int _compareLeagues(LeagueModel a, LeagueModel b) {
+    final aIndex = _featuredLeagueIds.indexOf(a.id);
+    final bIndex = _featuredLeagueIds.indexOf(b.id);
+    if (aIndex >= 0 || bIndex >= 0) {
+      if (aIndex < 0) return 1;
+      if (bIndex < 0) return -1;
+      return aIndex.compareTo(bIndex);
+    }
+    final country = a.country.compareTo(b.country);
+    return country != 0 ? country : a.name.compareTo(b.name);
   }
 
   @override
@@ -160,7 +184,7 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
       children: [
         const Expanded(
           child: Text(
-            'Current Competitions',
+            'Featured & Current Competitions',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
