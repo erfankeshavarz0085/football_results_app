@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/favorite_provider.dart';
 import 'providers/fixture_provider.dart';
@@ -17,14 +18,18 @@ import 'utils/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  runApp(const FootballApp());
+  final preferences = await SharedPreferences.getInstance();
+  runApp(FootballApp(preferences: preferences));
 }
 
 
 class FootballApp extends StatelessWidget {
 
+  final SharedPreferences preferences;
+
   const FootballApp({
     super.key,
+    required this.preferences,
   });
 
 
@@ -41,7 +46,7 @@ class FootballApp extends StatelessWidget {
 
 
         ChangeNotifierProvider(
-          create: (_) => FavoriteProvider(),
+          create: (_) => FavoriteProvider(preferences),
         ),
 
 
@@ -59,7 +64,7 @@ class FootballApp extends StatelessWidget {
         ),
 
         ChangeNotifierProvider(
-          create: (_) => AppSettingsProvider(),
+          create: (_) => AppSettingsProvider(preferences),
         ),
 
       ],

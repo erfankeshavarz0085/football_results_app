@@ -268,6 +268,17 @@ class _PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
+                  'Team: ${trophy.teamName.isEmpty ? 'Unknown' : trophy.teamName}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
                   [
                     trophy.country,
                     trophy.season,

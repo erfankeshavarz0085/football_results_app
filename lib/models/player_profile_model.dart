@@ -79,12 +79,14 @@ class PlayerTrophyModel {
   final String country;
   final String season;
   final String place;
+  final String teamName;
 
   const PlayerTrophyModel({
     required this.league,
     required this.country,
     required this.season,
     required this.place,
+    this.teamName = '',
   });
 
   factory PlayerTrophyModel.fromJson(dynamic json) {
@@ -93,6 +95,16 @@ class PlayerTrophyModel {
       country: json['country'] ?? '',
       season: json['season'] ?? '',
       place: json['place'] ?? '',
+    );
+  }
+
+  PlayerTrophyModel withTeam(String team) {
+    return PlayerTrophyModel(
+      league: league,
+      country: country,
+      season: season,
+      place: place,
+      teamName: team,
     );
   }
 }

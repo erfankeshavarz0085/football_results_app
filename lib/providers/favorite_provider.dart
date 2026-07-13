@@ -48,6 +48,8 @@ class FavoriteProvider extends ChangeNotifier {
   static const String _leaguesKey = 'favorite_leagues';
   static const String _matchesKey = 'followed_matches';
 
+  final SharedPreferences _preferences;
+
   final List<FavoriteTeamModel> _favoriteTeams = [];
   final List<LeagueModel> _favoriteLeagues = [];
   final List<FollowedMatchModel> _followedMatches = [];
@@ -62,15 +64,14 @@ class FavoriteProvider extends ChangeNotifier {
 
   bool get isLoaded => _isLoaded;
 
-  FavoriteProvider() {
+  FavoriteProvider(this._preferences) {
     loadFavorites();
   }
 
-  Future<void> loadFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    final rawTeams = prefs.getStringList(_teamsKey) ?? [];
-    final rawLeagues = prefs.getStringList(_leaguesKey) ?? [];
-    final rawMatches = prefs.getStringList(_matchesKey) ?? [];
+  void loadFavorites() {
+    final rawTeams = _preferences.getStringList(_teamsKey) ?? [];
+    final rawLeagues = _preferences.getStringList(_leaguesKey) ?? [];
+    final rawMatches = _preferences.getStringList(_matchesKey) ?? [];
 
     _favoriteTeams
       ..clear()
@@ -218,19 +219,15 @@ class FavoriteProvider extends ChangeNotifier {
   }
 
   Future<void> _saveFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-
     final rawTeams =
         _favoriteTeams.map((team) {
           return jsonEncode(team.toJson());
         }).toList();
 
-    await prefs.setStringList(_teamsKey, rawTeams);
+    await _preferences.setStringList(_teamsKey, rawTeams);
   }
 
   Future<void> _saveFavoriteLeagues() async {
-    final prefs = await SharedPreferences.getInstance();
-
     final leagues =
         _favoriteLeagues.map((league) {
           return jsonEncode({
@@ -244,18 +241,16 @@ class FavoriteProvider extends ChangeNotifier {
           });
         }).toList();
 
-    await prefs.setStringList(_leaguesKey, leagues);
+    await _preferences.setStringList(_leaguesKey, leagues);
   }
 
   Future<void> _saveFollowedMatches() async {
-    final prefs = await SharedPreferences.getInstance();
-
     final rawMatches =
         _followedMatches.map((match) {
           return jsonEncode(match.toJson());
         }).toList();
 
-    await prefs.setStringList(_matchesKey, rawMatches);
+    await _preferences.setStringList(_matchesKey, rawMatches);
   }
 
   FollowedMatchModel? _decodeFollowedMatch(String rawMatch) {

@@ -748,10 +748,15 @@ class ApiService {
           responses[0].isEmpty
               ? initialProfile
               : PlayerProfileModel.fromJson(responses[0].first);
+      final trophies = await _parsePlayerTrophies(
+        responses[2],
+        responses[1],
+        profile.nationality,
+      );
       final details = PlayerDetailsModel(
         profile: profile,
         career: _parsePlayerCareer(responses[1], profile.nationality),
-        trophies: responses[2].map(PlayerTrophyModel.fromJson).toList(),
+        trophies: trophies,
       );
       _playerDetailsCache[initialProfile.id] = _CacheItem(data: details);
       return details;
@@ -818,6 +823,132 @@ class ApiService {
       return latest != 0 ? latest : b.fromSeason.compareTo(a.fromSeason);
     });
     return result;
+  }
+
+  Future<List<PlayerTrophyModel>> _parsePlayerTrophies(
+    List<dynamic> trophyResponse,
+    List<dynamic> teamResponse,
+    String nationality,
+  ) async {
+    final teamHistories =
+        teamResponse
+            .map((item) {
+              final team = item['team'] ?? {};
+              return (
+                id: team['id'] as int? ?? 0,
+                name: (team['name'] ?? '').toString(),
+                country: (team['country'] ?? '').toString(),
+                seasons:
+                    ((item['seasons'] ?? []) as List).whereType<int>().toSet(),
+              );
+            })
+            .where((history) => history.name.isNotEmpty)
+            .toList();
+
+    final normalizedNationality = nationality.trim().toLowerCase();
+    final nationalTeam = teamHistories.where(
+      (history) => history.name.trim().toLowerCase() == normalizedNationality,
+    );
+    final trophies = trophyResponse.map(PlayerTrophyModel.fromJson).toList();
+    final ambiguousTeamIds = <int>{};
+
+    for (final trophy in trophies) {
+      if (_isNationalTeamTrophy(trophy)) continue;
+      final season = _trophySeason(trophy);
+      if (season == null) continue;
+      final clubs =
+          teamHistories
+              .where(
+                (history) =>
+                    history.seasons.contains(season) &&
+                    history.name.trim().toLowerCase() != normalizedNationality,
+              )
+              .toList();
+      if (clubs.length > 1) {
+        ambiguousTeamIds.addAll(
+          clubs.where((club) => club.id != 0).map((club) => club.id),
+        );
+      }
+    }
+
+    final teamCountries = <int, String>{
+      for (final history in teamHistories)
+        if (history.country.isNotEmpty) history.id: history.country,
+    };
+    await Future.wait(
+      ambiguousTeamIds.map((teamId) async {
+        if (teamCountries.containsKey(teamId)) return;
+        final response = await _fetchOptionalResponseList(
+          Uri.parse('${AppConstants.baseUrl}/teams?id=$teamId'),
+          'trophy team country',
+        );
+        if (response.isEmpty) return;
+        final team = response.first['team'] ?? {};
+        final country = (team['country'] ?? '').toString();
+        if (country.isNotEmpty) teamCountries[teamId] = country;
+      }),
+    );
+
+    return trophies.map((trophy) {
+      final season = _trophySeason(trophy);
+      if (season == null) return trophy;
+
+      final activeTeams =
+          teamHistories
+              .where((history) => history.seasons.contains(season))
+              .toList();
+      if (activeTeams.isEmpty) return trophy;
+
+      if (_isNationalTeamTrophy(trophy) && nationalTeam.isNotEmpty) {
+        return trophy.withTeam(nationalTeam.first.name);
+      }
+
+      final clubs =
+          activeTeams
+              .where(
+                (history) =>
+                    history.name.trim().toLowerCase() != normalizedNationality,
+              )
+              .toList();
+      if (clubs.length == 1) return trophy.withTeam(clubs.first.name);
+      if (clubs.length > 1) {
+        final trophyCountry = trophy.country.trim().toLowerCase();
+        final countryMatch = clubs.where(
+          (club) =>
+              (teamCountries[club.id] ?? '').trim().toLowerCase() ==
+              trophyCountry,
+        );
+        if (countryMatch.isNotEmpty) {
+          return trophy.withTeam(countryMatch.first.name);
+        }
+        return trophy.withTeam(clubs.first.name);
+      }
+      return trophy.withTeam(activeTeams.first.name);
+    }).toList();
+  }
+
+  int? _trophySeason(PlayerTrophyModel trophy) {
+    return int.tryParse(
+      RegExp(r'\d{4}').firstMatch(trophy.season)?.group(0) ?? '',
+    );
+  }
+
+  bool _isNationalTeamTrophy(PlayerTrophyModel trophy) {
+    final competition = trophy.league.toLowerCase();
+    const nationalCompetitionTerms = [
+      'world cup',
+      'copa america',
+      'euro championship',
+      'european championship',
+      'nations league',
+      'africa cup of nations',
+      'asian cup',
+      'gold cup',
+      'confederations cup',
+      'finalissima',
+      'olympic',
+    ];
+    return nationalCompetitionTerms.any(competition.contains);
   }
 
   Future<List<LeagueModel>> getCurrentLeagues({

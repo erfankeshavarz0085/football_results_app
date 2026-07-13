@@ -7,23 +7,24 @@ class AppSettingsProvider extends ChangeNotifier {
   static const String _showMatchAlertsKey = 'show_match_alerts';
   static const String _demoFallbackKey = 'demo_fallback_enabled';
 
+  final SharedPreferences _preferences;
+
   bool showFavoritesOnHome = true;
   bool showRecentlyViewedInSearch = true;
   bool showMatchAlertControls = true;
   bool demoFallbackEnabled = false;
   bool isLoaded = false;
 
-  AppSettingsProvider() {
+  AppSettingsProvider(this._preferences) {
     loadSettings();
   }
 
-  Future<void> loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    showFavoritesOnHome = prefs.getBool(_showFavoritesHomeKey) ?? true;
-    showRecentlyViewedInSearch = prefs.getBool(_showRecentSearchKey) ?? true;
-    showMatchAlertControls = prefs.getBool(_showMatchAlertsKey) ?? true;
-    demoFallbackEnabled = prefs.getBool(_demoFallbackKey) ?? false;
+  void loadSettings() {
+    showFavoritesOnHome = _preferences.getBool(_showFavoritesHomeKey) ?? true;
+    showRecentlyViewedInSearch =
+        _preferences.getBool(_showRecentSearchKey) ?? true;
+    showMatchAlertControls = _preferences.getBool(_showMatchAlertsKey) ?? true;
+    demoFallbackEnabled = _preferences.getBool(_demoFallbackKey) ?? false;
     isLoaded = true;
 
     notifyListeners();
@@ -33,31 +34,27 @@ class AppSettingsProvider extends ChangeNotifier {
     showFavoritesOnHome = value;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_showFavoritesHomeKey, value);
+    await _preferences.setBool(_showFavoritesHomeKey, value);
   }
 
   Future<void> setShowRecentlyViewedInSearch(bool value) async {
     showRecentlyViewedInSearch = value;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_showRecentSearchKey, value);
+    await _preferences.setBool(_showRecentSearchKey, value);
   }
 
   Future<void> setShowMatchAlertControls(bool value) async {
     showMatchAlertControls = value;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_showMatchAlertsKey, value);
+    await _preferences.setBool(_showMatchAlertsKey, value);
   }
 
   Future<void> setDemoFallbackEnabled(bool value) async {
     demoFallbackEnabled = value;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_demoFallbackKey, value);
+    await _preferences.setBool(_demoFallbackKey, value);
   }
 }
