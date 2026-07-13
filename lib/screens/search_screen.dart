@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/league_model.dart';
+import '../models/player_profile_model.dart';
 import '../models/team_model.dart';
 import '../providers/app_settings_provider.dart';
 import '../providers/recent_view_provider.dart';
@@ -15,9 +16,10 @@ import '../utils/constants.dart';
 import '../widgets/empty_state_card.dart';
 import 'match_details_screen.dart';
 import 'league_details/league_details_screen.dart';
+import 'player_details_screen.dart';
 import 'team_details_screen.dart';
 
-enum SearchMode { teams, leagues }
+enum SearchMode { teams, leagues, players }
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -129,12 +131,13 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
-    final updatedSearches = [
-      trimmedValue,
-      ...recentSearches.where((item) {
-        return item.toLowerCase() != trimmedValue.toLowerCase();
-      }),
-    ].take(6).toList();
+    final updatedSearches =
+        [
+          trimmedValue,
+          ...recentSearches.where((item) {
+            return item.toLowerCase() != trimmedValue.toLowerCase();
+          }),
+        ].take(6).toList();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_recentSearchesKey, updatedSearches);
@@ -170,10 +173,16 @@ class _SearchScreenState extends State<SearchScreen> {
 
       final provider = Provider.of<TeamProvider>(context, listen: false);
 
-      if (searchMode == SearchMode.teams) {
-        provider.searchTeams(value);
-      } else {
-        provider.searchLeagues(value);
+      switch (searchMode) {
+        case SearchMode.teams:
+          provider.searchTeams(value);
+          break;
+        case SearchMode.leagues:
+          provider.searchLeagues(value);
+          break;
+        case SearchMode.players:
+          provider.searchPlayers(value);
+          break;
       }
     });
   }
@@ -187,15 +196,11 @@ class _SearchScreenState extends State<SearchScreen> {
     _debounce?.cancel();
 
     if (mode == SearchMode.teams && query.trim().length >= 3) {
-      Provider.of<TeamProvider>(
-        context,
-        listen: false,
-      ).searchTeams(query);
+      Provider.of<TeamProvider>(context, listen: false).searchTeams(query);
     } else if (mode == SearchMode.leagues && query.trim().length >= 3) {
-      Provider.of<TeamProvider>(
-        context,
-        listen: false,
-      ).searchLeagues(query);
+      Provider.of<TeamProvider>(context, listen: false).searchLeagues(query);
+    } else if (mode == SearchMode.players && query.trim().length >= 3) {
+      Provider.of<TeamProvider>(context, listen: false).searchPlayers(query);
     }
   }
 
@@ -205,20 +210,19 @@ class _SearchScreenState extends State<SearchScreen> {
       selectedCountry = 'All';
     });
     _searchController.text = value;
-    _searchController.selection = TextSelection.collapsed(
-      offset: value.length,
-    );
+    _searchController.selection = TextSelection.collapsed(offset: value.length);
 
-    if (searchMode == SearchMode.teams) {
-      Provider.of<TeamProvider>(
-        context,
-        listen: false,
-      ).searchTeams(value);
-    } else {
-      Provider.of<TeamProvider>(
-        context,
-        listen: false,
-      ).searchLeagues(value);
+    final provider = Provider.of<TeamProvider>(context, listen: false);
+    switch (searchMode) {
+      case SearchMode.teams:
+        provider.searchTeams(value);
+        break;
+      case SearchMode.leagues:
+        provider.searchLeagues(value);
+        break;
+      case SearchMode.players:
+        provider.searchPlayers(value);
+        break;
     }
   }
 
@@ -230,15 +234,11 @@ class _SearchScreenState extends State<SearchScreen> {
     });
     _searchController.clear();
 
-    Provider.of<TeamProvider>(
-      context,
-      listen: false,
-    ).searchTeams('');
+    Provider.of<TeamProvider>(context, listen: false).searchTeams('');
 
-    Provider.of<TeamProvider>(
-      context,
-      listen: false,
-    ).searchLeagues('');
+    Provider.of<TeamProvider>(context, listen: false).searchLeagues('');
+
+    Provider.of<TeamProvider>(context, listen: false).searchPlayers('');
   }
 
   @override
@@ -247,15 +247,24 @@ class _SearchScreenState extends State<SearchScreen> {
     final recentViewProvider = Provider.of<RecentViewProvider>(context);
     final settings = Provider.of<AppSettingsProvider>(context);
     final trimmedQuery = query.trim();
-    final teams = trimmedQuery.length < 3 ? popularTeams : provider.searchResults;
-    final leagues = trimmedQuery.length < 3
-        ? LeagueCatalog.topLeagues
-        : provider.leagueSearchResults;
-    final countries = searchMode == SearchMode.teams
-        ? _countriesFromTeams(teams)
-        : _countriesFromLeagues(leagues);
+    final teams =
+        trimmedQuery.length < 3 ? popularTeams : provider.searchResults;
+    final leagues =
+        trimmedQuery.length < 3
+            ? LeagueCatalog.topLeagues
+            : provider.leagueSearchResults;
+    final players =
+        trimmedQuery.length < 3
+            ? <PlayerProfileModel>[]
+            : provider.playerSearchResults;
+    final countries = switch (searchMode) {
+      SearchMode.teams => _countriesFromTeams(teams),
+      SearchMode.leagues => _countriesFromLeagues(leagues),
+      SearchMode.players => _countriesFromPlayers(players),
+    };
     final filteredTeams = _filterTeamsByCountry(teams);
     final filteredLeagues = _filterLeaguesByCountry(leagues);
+    final filteredPlayers = _filterPlayersByCountry(players);
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
@@ -288,10 +297,23 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
           _searchHint(trimmedQuery),
           const SizedBox(height: 12),
-          if (searchMode == SearchMode.teams)
-            _teamResults(provider, trimmedQuery, filteredTeams)
-          else
-            _leagueResults(provider, trimmedQuery, filteredLeagues),
+          switch (searchMode) {
+            SearchMode.teams => _teamResults(
+              provider,
+              trimmedQuery,
+              filteredTeams,
+            ),
+            SearchMode.leagues => _leagueResults(
+              provider,
+              trimmedQuery,
+              filteredLeagues,
+            ),
+            SearchMode.players => _playerResults(
+              provider,
+              trimmedQuery,
+              filteredPlayers,
+            ),
+          },
         ],
       ),
     );
@@ -310,28 +332,52 @@ class _SearchScreenState extends State<SearchScreen> {
       return leagues;
     }
 
-    return leagues.where((league) => league.country == selectedCountry).toList();
+    return leagues
+        .where((league) => league.country == selectedCountry)
+        .toList();
+  }
+
+  List<PlayerProfileModel> _filterPlayersByCountry(
+    List<PlayerProfileModel> players,
+  ) {
+    if (selectedCountry == 'All') return players;
+    return players
+        .where((player) => player.nationality == selectedCountry)
+        .toList();
   }
 
   List<String> _countriesFromTeams(List<TeamModel> teams) {
-    final countries = teams
-        .map((team) => team.country.trim())
-        .where((country) => country.isNotEmpty)
-        .toSet()
-        .toList();
+    final countries =
+        teams
+            .map((team) => team.country.trim())
+            .where((country) => country.isNotEmpty)
+            .toSet()
+            .toList();
 
     countries.sort();
     return ['All', ...countries];
   }
 
   List<String> _countriesFromLeagues(List<LeagueModel> leagues) {
-    final countries = leagues
-        .map((league) => league.country.trim())
-        .where((country) => country.isNotEmpty)
-        .toSet()
-        .toList();
+    final countries =
+        leagues
+            .map((league) => league.country.trim())
+            .where((country) => country.isNotEmpty)
+            .toSet()
+            .toList();
 
     countries.sort();
+    return ['All', ...countries];
+  }
+
+  List<String> _countriesFromPlayers(List<PlayerProfileModel> players) {
+    final countries =
+        players
+            .map((player) => player.nationality.trim())
+            .where((country) => country.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
     return ['All', ...countries];
   }
 
@@ -341,17 +387,20 @@ class _SearchScreenState extends State<SearchScreen> {
       onChanged: _onSearchChanged,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        hintText: searchMode == SearchMode.teams
-            ? 'Search teams...'
-            : 'Search leagues...',
+        hintText: switch (searchMode) {
+          SearchMode.teams => 'Search teams...',
+          SearchMode.leagues => 'Search leagues...',
+          SearchMode.players => 'Search players...',
+        },
         hintStyle: const TextStyle(color: Colors.grey),
         prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
-        suffixIcon: query.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.grey),
-                onPressed: _clearQuery,
-              )
-            : null,
+        suffixIcon:
+            query.isNotEmpty
+                ? IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                  onPressed: _clearQuery,
+                )
+                : null,
         filled: true,
         fillColor: const Color(0xff161b22),
         border: OutlineInputBorder(
@@ -374,6 +423,7 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           _modeButton('Teams', SearchMode.teams),
           _modeButton('Leagues', SearchMode.leagues),
+          _modeButton('Players', SearchMode.players),
         ],
       ),
     );
@@ -465,15 +515,16 @@ class _SearchScreenState extends State<SearchScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: recentSearches.map((item) {
-            return ActionChip(
-              label: Text(item),
-              backgroundColor: const Color(0xff161b22),
-              labelStyle: const TextStyle(color: Colors.white70),
-              side: const BorderSide(color: Colors.white10),
-              onPressed: () => _applyRecentSearch(item),
-            );
-          }).toList(),
+          children:
+              recentSearches.map((item) {
+                return ActionChip(
+                  label: Text(item),
+                  backgroundColor: const Color(0xff161b22),
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  side: const BorderSide(color: Colors.white10),
+                  onPressed: () => _applyRecentSearch(item),
+                );
+              }).toList(),
         ),
       ],
     );
@@ -575,11 +626,12 @@ class _SearchScreenState extends State<SearchScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => TeamDetailsScreen(
-            teamId: item.id,
-            fallbackName: item.title,
-            fallbackLogo: item.imageUrl,
-          ),
+          builder:
+              (_) => TeamDetailsScreen(
+                teamId: item.id,
+                fallbackName: item.title,
+                fallbackLogo: item.imageUrl,
+              ),
         ),
       );
       return;
@@ -588,19 +640,20 @@ class _SearchScreenState extends State<SearchScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => LeagueDetailsScreen(
-          leagueId: item.id,
-          leagueName: item.title,
-          initialLeague: LeagueModel(
-            id: item.id,
-            name: item.title,
-            country: item.subtitle,
-            season: (item.season ?? AppConstants.currentSeason).toString(),
-            apiSeason: item.season ?? AppConstants.currentSeason,
-            logoUrl: item.imageUrl,
-            fallbackIcon: Icons.emoji_events_rounded,
-          ),
-        ),
+        builder:
+            (_) => LeagueDetailsScreen(
+              leagueId: item.id,
+              leagueName: item.title,
+              initialLeague: LeagueModel(
+                id: item.id,
+                name: item.title,
+                country: item.subtitle,
+                season: (item.season ?? AppConstants.currentSeason).toString(),
+                apiSeason: item.season ?? AppConstants.currentSeason,
+                logoUrl: item.imageUrl,
+                fallbackIcon: Icons.emoji_events_rounded,
+              ),
+            ),
       ),
     );
   }
@@ -623,18 +676,19 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _searchHint(String trimmedQuery) {
     final text = switch (searchMode) {
-      SearchMode.teams => trimmedQuery.length < 3
-          ? 'Popular teams. Type at least 3 letters to search all teams.'
-          : 'Team results',
-      SearchMode.leagues => trimmedQuery.length < 3
-          ? 'Top competitions'
-          : 'League results',
+      SearchMode.teams =>
+        trimmedQuery.length < 3
+            ? 'Popular teams. Type at least 3 letters to search all teams.'
+            : 'Team results',
+      SearchMode.leagues =>
+        trimmedQuery.length < 3 ? 'Top competitions' : 'League results',
+      SearchMode.players =>
+        trimmedQuery.length < 3
+            ? 'Type at least 3 letters to search players.'
+            : 'Player results',
     };
 
-    return Text(
-      text,
-      style: const TextStyle(color: Colors.grey, fontSize: 12),
-    );
+    return Text(text, style: const TextStyle(color: Colors.grey, fontSize: 12));
   }
 
   Widget _teamResults(
@@ -662,9 +716,7 @@ class _SearchScreenState extends State<SearchScreen> {
       return _messageBox('No teams found');
     }
 
-    return Column(
-      children: teams.map(_teamCard).toList(),
-    );
+    return Column(children: teams.map(_teamCard).toList());
   }
 
   Widget _leagueResults(
@@ -692,8 +744,125 @@ class _SearchScreenState extends State<SearchScreen> {
       return _messageBox('No leagues found');
     }
 
-    return Column(
-      children: leagues.map(_leagueCard).toList(),
+    return Column(children: leagues.map(_leagueCard).toList());
+  }
+
+  Widget _playerResults(
+    TeamProvider provider,
+    String trimmedQuery,
+    List<PlayerProfileModel> players,
+  ) {
+    if (trimmedQuery.length < 3) {
+      return _messageBox('Enter at least 3 letters to find a player.');
+    }
+
+    if (provider.isPlayerSearchLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 60),
+          child: CircularProgressIndicator(color: Colors.greenAccent),
+        ),
+      );
+    }
+
+    if (provider.playerSearchErrorMessage != null) {
+      return _messageBox(
+        provider.playerSearchErrorMessage!,
+        onRetry: () => provider.searchPlayers(trimmedQuery),
+      );
+    }
+
+    if (players.isEmpty) {
+      return _messageBox('No players found');
+    }
+
+    return Column(children: players.map(_playerCard).toList());
+  }
+
+  Widget _playerCard(PlayerProfileModel player) {
+    final subtitle = [
+      player.nationality,
+      player.position,
+      if (player.age != null) '${player.age} years',
+    ].where((value) => value.isNotEmpty).join(' - ');
+
+    return InkWell(
+      onTap: () {
+        _saveRecentSearch(player.name);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PlayerDetailsScreen(player: player),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: const Color(0xff0d1117),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child:
+                  player.photo.isEmpty
+                      ? const Icon(
+                        Icons.person_rounded,
+                        color: Colors.greenAccent,
+                      )
+                      : CachedNetworkImage(
+                        imageUrl: player.photo,
+                        fit: BoxFit.cover,
+                        errorWidget:
+                            (_, __, ___) => const Icon(
+                              Icons.person_rounded,
+                              color: Colors.greenAccent,
+                            ),
+                      ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    player.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle.isEmpty ? 'Player' : subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.greenAccent,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -709,11 +878,12 @@ class _SearchScreenState extends State<SearchScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TeamDetailsScreen(
-              teamId: team.id,
-              fallbackName: team.name,
-              fallbackLogo: team.logo,
-            ),
+            builder:
+                (_) => TeamDetailsScreen(
+                  teamId: team.id,
+                  fallbackName: team.name,
+                  fallbackLogo: team.logo,
+                ),
           ),
         );
       },
@@ -776,11 +946,12 @@ class _SearchScreenState extends State<SearchScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => LeagueDetailsScreen(
-              leagueId: league.id,
-              leagueName: league.name,
-              initialLeague: league,
-            ),
+            builder:
+                (_) => LeagueDetailsScreen(
+                  leagueId: league.id,
+                  leagueName: league.name,
+                  initialLeague: league,
+                ),
           ),
         );
       },
@@ -844,19 +1015,24 @@ class _SearchScreenState extends State<SearchScreen> {
         color: useWhiteBackground ? Colors.white : const Color(0xff0d1117),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: imageUrl.isEmpty
-          ? Icon(
-              fallbackIcon,
-              color: useWhiteBackground ? Colors.black : Colors.greenAccent,
-            )
-          : CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.contain,
-              errorWidget: (_, __, ___) => Icon(
+      child:
+          imageUrl.isEmpty
+              ? Icon(
                 fallbackIcon,
                 color: useWhiteBackground ? Colors.black : Colors.greenAccent,
+              )
+              : CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                errorWidget:
+                    (_, __, ___) => Icon(
+                      fallbackIcon,
+                      color:
+                          useWhiteBackground
+                              ? Colors.black
+                              : Colors.greenAccent,
+                    ),
               ),
-            ),
     );
   }
 

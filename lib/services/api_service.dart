@@ -12,6 +12,7 @@ import '../utils/constants.dart';
 import '../utils/demo_football_data.dart';
 import '../models/match_detail_model.dart';
 import '../models/player_leader_model.dart';
+import '../models/player_profile_model.dart';
 
 class ApiService {
   static const String _persistentCachePrefix = 'api_cache';
@@ -21,6 +22,10 @@ class ApiService {
       {};
   static final Map<String, _CacheItem<List<TeamModel>>> _teamSearchCache = {};
   static final Map<String, _CacheItem<List<LeagueModel>>> _leagueSearchCache =
+      {};
+  static final Map<String, _CacheItem<List<PlayerProfileModel>>>
+  _playerProfileSearchCache = {};
+  static final Map<int, _CacheItem<PlayerDetailsModel>> _playerDetailsCache =
       {};
   static _CacheItem<List<LeagueModel>>? _currentLeaguesCache;
   static final Map<String, _CacheItem<LeaguePlayerLeaders>>
@@ -677,6 +682,142 @@ class ApiService {
 
       throw Exception('Failed to search leagues: $e');
     }
+  }
+
+  Future<List<PlayerProfileModel>> searchPlayerProfiles(String query) async {
+    final trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 3) return [];
+
+    final cacheKey = trimmedQuery.toLowerCase();
+    final cached = _playerProfileSearchCache[cacheKey];
+    if (cached != null && !cached.isExpired(const Duration(minutes: 30))) {
+      return cached.data;
+    }
+
+    final url = Uri.parse(
+      '${AppConstants.baseUrl}/players/profiles?search=${Uri.encodeQueryComponent(trimmedQuery)}',
+    );
+
+    try {
+      final response = await _fetchResponseList(url);
+      final players =
+          response
+              .map(PlayerProfileModel.fromJson)
+              .where((player) => player.id != 0)
+              .toList();
+      _playerProfileSearchCache[cacheKey] = _CacheItem(data: players);
+      return players;
+    } catch (e) {
+      debugPrint('PLAYER SEARCH ERROR: $e');
+      throw Exception('Failed to search players: $e');
+    }
+  }
+
+  Future<PlayerDetailsModel?> getPlayerDetails(
+    PlayerProfileModel initialProfile,
+  ) async {
+    final cached = _playerDetailsCache[initialProfile.id];
+    if (cached != null && !cached.isExpired(const Duration(hours: 12))) {
+      return cached.data;
+    }
+
+    try {
+      final responses = await Future.wait([
+        _fetchOptionalResponseList(
+          Uri.parse(
+            '${AppConstants.baseUrl}/players/profiles?player=${initialProfile.id}',
+          ),
+          'player profile',
+        ),
+        _fetchOptionalResponseList(
+          Uri.parse(
+            '${AppConstants.baseUrl}/players/teams?player=${initialProfile.id}',
+          ),
+          'player teams',
+        ),
+        _fetchOptionalResponseList(
+          Uri.parse(
+            '${AppConstants.baseUrl}/trophies?player=${initialProfile.id}',
+          ),
+          'player trophies',
+        ),
+      ]);
+
+      final profile =
+          responses[0].isEmpty
+              ? initialProfile
+              : PlayerProfileModel.fromJson(responses[0].first);
+      final details = PlayerDetailsModel(
+        profile: profile,
+        career: _parsePlayerCareer(responses[1], profile.nationality),
+        trophies: responses[2].map(PlayerTrophyModel.fromJson).toList(),
+      );
+      _playerDetailsCache[initialProfile.id] = _CacheItem(data: details);
+      return details;
+    } catch (e) {
+      debugPrint('PLAYER DETAILS ERROR: $e');
+      throw Exception('Failed to load player details: $e');
+    }
+  }
+
+  List<PlayerCareerSpan> _parsePlayerCareer(
+    List<dynamic> response,
+    String nationality,
+  ) {
+    final result = <PlayerCareerSpan>[];
+    final normalizedNationality = nationality.trim().toLowerCase();
+
+    for (final item in response) {
+      final team = item['team'] ?? {};
+      final teamName = (team['name'] ?? '').toString();
+      if (teamName.isEmpty ||
+          (normalizedNationality.isNotEmpty &&
+              teamName.trim().toLowerCase() == normalizedNationality)) {
+        continue;
+      }
+
+      final seasons =
+          ((item['seasons'] ?? []) as List).whereType<int>().toSet().toList()
+            ..sort();
+      if (seasons.isEmpty) continue;
+
+      var fromSeason = seasons.first;
+      var previousSeason = seasons.first;
+      for (final season in seasons.skip(1)) {
+        if (season == previousSeason + 1) {
+          previousSeason = season;
+          continue;
+        }
+        result.add(
+          PlayerCareerSpan(
+            teamId: team['id'] ?? 0,
+            teamName: teamName,
+            teamLogo: team['logo'] ?? '',
+            fromSeason: fromSeason,
+            toSeason: previousSeason,
+          ),
+        );
+        fromSeason = season;
+        previousSeason = season;
+      }
+
+      result.add(
+        PlayerCareerSpan(
+          teamId: team['id'] ?? 0,
+          teamName: teamName,
+          teamLogo: team['logo'] ?? '',
+          fromSeason: fromSeason,
+          toSeason: previousSeason,
+        ),
+      );
+    }
+
+    result.sort((a, b) {
+      final latest = b.toSeason.compareTo(a.toSeason);
+      return latest != 0 ? latest : b.fromSeason.compareTo(a.fromSeason);
+    });
+    return result;
   }
 
   Future<List<LeagueModel>> getCurrentLeagues({
