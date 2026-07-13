@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/fixture_model.dart';
 import '../models/league_model.dart';
+import '../models/player_profile_model.dart';
 import '../models/team_model.dart';
 
 class FavoriteTeamModel {
@@ -47,12 +48,14 @@ class FavoriteProvider extends ChangeNotifier {
   static const String _teamsKey = 'favorite_teams';
   static const String _leaguesKey = 'favorite_leagues';
   static const String _matchesKey = 'followed_matches';
+  static const String _playersKey = 'favorite_players';
 
   final SharedPreferences _preferences;
 
   final List<FavoriteTeamModel> _favoriteTeams = [];
   final List<LeagueModel> _favoriteLeagues = [];
   final List<FollowedMatchModel> _followedMatches = [];
+  final List<PlayerProfileModel> _favoritePlayers = [];
   bool _isLoaded = false;
 
   List<FavoriteTeamModel> get favoriteTeams =>
@@ -61,6 +64,9 @@ class FavoriteProvider extends ChangeNotifier {
   List<FollowedMatchModel> get followedMatches {
     return List.unmodifiable(_followedMatches);
   }
+
+  List<PlayerProfileModel> get favoritePlayers =>
+      List.unmodifiable(_favoritePlayers);
 
   bool get isLoaded => _isLoaded;
 
@@ -72,6 +78,7 @@ class FavoriteProvider extends ChangeNotifier {
     final rawTeams = _preferences.getStringList(_teamsKey) ?? [];
     final rawLeagues = _preferences.getStringList(_leaguesKey) ?? [];
     final rawMatches = _preferences.getStringList(_matchesKey) ?? [];
+    final rawPlayers = _preferences.getStringList(_playersKey) ?? [];
 
     _favoriteTeams
       ..clear()
@@ -87,6 +94,12 @@ class FavoriteProvider extends ChangeNotifier {
       ..clear()
       ..addAll(
         rawMatches.map(_decodeFollowedMatch).whereType<FollowedMatchModel>(),
+      );
+
+    _favoritePlayers
+      ..clear()
+      ..addAll(
+        rawPlayers.map(_decodeFavoritePlayer).whereType<PlayerProfileModel>(),
       );
 
     _isLoaded = true;
@@ -141,6 +154,10 @@ class FavoriteProvider extends ChangeNotifier {
     return _followedMatches.any((match) => match.fixtureId == fixtureId);
   }
 
+  bool isFavoritePlayer(int playerId) {
+    return _favoritePlayers.any((player) => player.id == playerId);
+  }
+
   Future<void> toggleFavoriteTeam(FavoriteTeamModel team) async {
     if (isFavorite(team.id)) {
       _favoriteTeams.removeWhere((favoriteTeam) => favoriteTeam.id == team.id);
@@ -174,6 +191,22 @@ class FavoriteProvider extends ChangeNotifier {
   Future<void> removeFavoriteLeague(int leagueId) async {
     _favoriteLeagues.removeWhere((league) => league.id == leagueId);
     await _saveFavoriteLeagues();
+    notifyListeners();
+  }
+
+  Future<void> toggleFavoritePlayer(PlayerProfileModel player) async {
+    if (isFavoritePlayer(player.id)) {
+      _favoritePlayers.removeWhere((item) => item.id == player.id);
+    } else {
+      _favoritePlayers.add(player);
+    }
+    await _saveFavoritePlayers();
+    notifyListeners();
+  }
+
+  Future<void> removeFavoritePlayer(int playerId) async {
+    _favoritePlayers.removeWhere((player) => player.id == playerId);
+    await _saveFavoritePlayers();
     notifyListeners();
   }
 
@@ -251,6 +284,22 @@ class FavoriteProvider extends ChangeNotifier {
         }).toList();
 
     await _preferences.setStringList(_matchesKey, rawMatches);
+  }
+
+  Future<void> _saveFavoritePlayers() async {
+    final rawPlayers =
+        _favoritePlayers.map((player) => jsonEncode(player.toJson())).toList();
+    await _preferences.setStringList(_playersKey, rawPlayers);
+  }
+
+  PlayerProfileModel? _decodeFavoritePlayer(String rawPlayer) {
+    try {
+      return PlayerProfileModel.fromJson(
+        jsonDecode(rawPlayer) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   FollowedMatchModel? _decodeFollowedMatch(String rawMatch) {

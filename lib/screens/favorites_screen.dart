@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/league_model.dart';
+import '../models/player_profile_model.dart';
 import '../providers/app_settings_provider.dart';
 import '../providers/favorite_provider.dart';
 import '../widgets/team_logo.dart';
 import 'league_details/league_details_screen.dart';
 import 'match_details_screen.dart';
+import 'player_details_screen.dart';
 import 'team_details_screen.dart';
 
-enum FavoriteFilter { all, matches, leagues, teams }
+enum FavoriteFilter { all, matches, leagues, teams, players }
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -28,19 +30,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final favoriteTeams = favoriteProvider.favoriteTeams;
     final favoriteLeagues = favoriteProvider.favoriteLeagues;
     final followedMatches = favoriteProvider.followedMatches;
-    final hasFavorites = favoriteTeams.isNotEmpty ||
+    final favoritePlayers = favoriteProvider.favoritePlayers;
+    final hasFavorites =
+        favoriteTeams.isNotEmpty ||
         favoriteLeagues.isNotEmpty ||
-        followedMatches.isNotEmpty;
-    final showMatches = selectedFilter == FavoriteFilter.all ||
+        followedMatches.isNotEmpty ||
+        favoritePlayers.isNotEmpty;
+    final showMatches =
+        selectedFilter == FavoriteFilter.all ||
         selectedFilter == FavoriteFilter.matches;
-    final showLeagues = selectedFilter == FavoriteFilter.all ||
+    final showLeagues =
+        selectedFilter == FavoriteFilter.all ||
         selectedFilter == FavoriteFilter.leagues;
-    final showTeams = selectedFilter == FavoriteFilter.all ||
+    final showTeams =
+        selectedFilter == FavoriteFilter.all ||
         selectedFilter == FavoriteFilter.teams;
+    final showPlayers =
+        selectedFilter == FavoriteFilter.all ||
+        selectedFilter == FavoriteFilter.players;
     final hasFilteredFavorites =
         (showMatches && followedMatches.isNotEmpty) ||
-            (showLeagues && favoriteLeagues.isNotEmpty) ||
-            (showTeams && favoriteTeams.isNotEmpty);
+        (showLeagues && favoriteLeagues.isNotEmpty) ||
+        (showTeams && favoriteTeams.isNotEmpty) ||
+        (showPlayers && favoritePlayers.isNotEmpty);
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
@@ -50,56 +62,67 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: !favoriteProvider.isLoaded
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.greenAccent),
-            )
-          : !hasFavorites
+      body:
+          !favoriteProvider.isLoaded
+              ? const Center(
+                child: CircularProgressIndicator(color: Colors.greenAccent),
+              )
+              : !hasFavorites
               ? _emptyState()
               : ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _header(
-                      favoriteTeams.length,
-                      favoriteLeagues.length,
-                      followedMatches.length,
-                    ),
-                    const SizedBox(height: 14),
-                    _filterBar(
-                      teamCount: favoriteTeams.length,
-                      leagueCount: favoriteLeagues.length,
-                      matchCount: followedMatches.length,
-                    ),
-                    const SizedBox(height: 20),
-                    if (!hasFilteredFavorites)
-                      _filteredEmptyState()
-                    else ...[
-                      if (showMatches && followedMatches.isNotEmpty) ...[
-                        _sectionTitle('Followed Matches'),
-                        const SizedBox(height: 12),
-                        ...followedMatches.map((match) {
-                          return _followedMatchCard(context, match);
-                        }),
-                        const SizedBox(height: 10),
-                      ],
-                      if (showLeagues && favoriteLeagues.isNotEmpty) ...[
-                        _sectionTitle('Favorite Leagues'),
-                        const SizedBox(height: 12),
-                        ...favoriteLeagues.map((league) {
-                          return _favoriteLeagueCard(context, league);
-                        }),
-                        const SizedBox(height: 10),
-                      ],
-                      if (showTeams && favoriteTeams.isNotEmpty) ...[
-                        _sectionTitle('Favorite Teams'),
-                        const SizedBox(height: 12),
-                        ...favoriteTeams.map((team) {
-                          return _favoriteTeamCard(context, team);
-                        }),
-                      ],
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _header(
+                    favoriteTeams.length,
+                    favoriteLeagues.length,
+                    followedMatches.length,
+                    favoritePlayers.length,
+                  ),
+                  const SizedBox(height: 14),
+                  _filterBar(
+                    teamCount: favoriteTeams.length,
+                    leagueCount: favoriteLeagues.length,
+                    matchCount: followedMatches.length,
+                    playerCount: favoritePlayers.length,
+                  ),
+                  const SizedBox(height: 20),
+                  if (!hasFilteredFavorites)
+                    _filteredEmptyState()
+                  else ...[
+                    if (showMatches && followedMatches.isNotEmpty) ...[
+                      _sectionTitle('Followed Matches'),
+                      const SizedBox(height: 12),
+                      ...followedMatches.map((match) {
+                        return _followedMatchCard(context, match);
+                      }),
+                      const SizedBox(height: 10),
+                    ],
+                    if (showLeagues && favoriteLeagues.isNotEmpty) ...[
+                      _sectionTitle('Favorite Leagues'),
+                      const SizedBox(height: 12),
+                      ...favoriteLeagues.map((league) {
+                        return _favoriteLeagueCard(context, league);
+                      }),
+                      const SizedBox(height: 10),
+                    ],
+                    if (showTeams && favoriteTeams.isNotEmpty) ...[
+                      _sectionTitle('Favorite Teams'),
+                      const SizedBox(height: 12),
+                      ...favoriteTeams.map((team) {
+                        return _favoriteTeamCard(context, team);
+                      }),
+                      const SizedBox(height: 10),
+                    ],
+                    if (showPlayers && favoritePlayers.isNotEmpty) ...[
+                      _sectionTitle('Favorite Players'),
+                      const SizedBox(height: 12),
+                      ...favoritePlayers.map((player) {
+                        return _favoritePlayerCard(context, player);
+                      }),
                     ],
                   ],
-                ),
+                ],
+              ),
     );
   }
 
@@ -134,7 +157,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Open a team, league or match card and save it for quick access.',
+              'Open a player, team, league or match and save it for quick access.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, height: 1.4),
             ),
@@ -144,7 +167,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _header(int teamCount, int leagueCount, int matchCount) {
+  Widget _header(
+    int teamCount,
+    int leagueCount,
+    int matchCount,
+    int playerCount,
+  ) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -161,7 +189,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              '$teamCount teams, $leagueCount leagues and $matchCount matches saved for quick access.',
+              '$teamCount teams, $leagueCount leagues, $playerCount players and $matchCount matches saved.',
               style: const TextStyle(color: Colors.white70, height: 1.4),
             ),
           ),
@@ -185,6 +213,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     required int teamCount,
     required int leagueCount,
     required int matchCount,
+    required int playerCount,
   }) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -193,11 +222,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           _filterChip(
             FavoriteFilter.all,
             'All',
-            teamCount + leagueCount + matchCount,
+            teamCount + leagueCount + matchCount + playerCount,
           ),
           _filterChip(FavoriteFilter.matches, 'Matches', matchCount),
           _filterChip(FavoriteFilter.leagues, 'Leagues', leagueCount),
           _filterChip(FavoriteFilter.teams, 'Teams', teamCount),
+          _filterChip(FavoriteFilter.players, 'Players', playerCount),
         ],
       ),
     );
@@ -216,14 +246,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
           decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.greenAccent.withValues(alpha: 0.16)
-                : const Color(0xff161b22),
+            color:
+                isSelected
+                    ? Colors.greenAccent.withValues(alpha: 0.16)
+                    : const Color(0xff161b22),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: isSelected
-                  ? Colors.greenAccent.withValues(alpha: 0.45)
-                  : Colors.white10,
+              color:
+                  isSelected
+                      ? Colors.greenAccent.withValues(alpha: 0.45)
+                      : Colors.white10,
             ),
           ),
           child: Text(
@@ -297,10 +329,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   onPressed: () {
                     favoriteProvider.removeFollowedMatch(match.fixtureId);
                   },
-                  icon: const Icon(
-                    Icons.star_rounded,
-                    color: Colors.amber,
-                  ),
+                  icon: const Icon(Icons.star_rounded, color: Colors.amber),
                 ),
               ],
             ),
@@ -392,9 +421,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isActive
-                ? Colors.greenAccent.withValues(alpha: 0.16)
-                : const Color(0xff0d1117),
+            color:
+                isActive
+                    ? Colors.greenAccent.withValues(alpha: 0.16)
+                    : const Color(0xff0d1117),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isActive ? Colors.greenAccent : Colors.white10,
@@ -465,10 +495,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => LeagueDetailsScreen(
-              leagueId: league.id,
-              leagueName: league.name,
-            ),
+            builder:
+                (_) => LeagueDetailsScreen(
+                  leagueId: league.id,
+                  leagueName: league.name,
+                ),
           ),
         );
       },
@@ -494,10 +525,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: CachedNetworkImage(
                 imageUrl: league.logoUrl,
                 fit: BoxFit.contain,
-                errorWidget: (_, __, ___) => Icon(
-                  league.fallbackIcon,
-                  color: Colors.black,
-                ),
+                errorWidget:
+                    (_, __, ___) =>
+                        Icon(league.fallbackIcon, color: Colors.black),
               ),
             ),
             const SizedBox(width: 14),
@@ -522,10 +552,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ),
             IconButton(
               onPressed: () => favoriteProvider.removeFavoriteLeague(league.id),
-              icon: const Icon(
-                Icons.favorite_rounded,
-                color: Colors.redAccent,
-              ),
+              icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
             ),
           ],
         ),
@@ -544,11 +571,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TeamDetailsScreen(
-              teamId: team.id,
-              fallbackName: team.name,
-              fallbackLogo: team.logo,
-            ),
+            builder:
+                (_) => TeamDetailsScreen(
+                  teamId: team.id,
+                  fallbackName: team.name,
+                  fallbackLogo: team.logo,
+                ),
           ),
         );
       },
@@ -586,10 +614,94 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ),
             IconButton(
               onPressed: () => favoriteProvider.removeFavoriteTeam(team.id),
-              icon: const Icon(
-                Icons.favorite_rounded,
-                color: Colors.redAccent,
+              icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _favoritePlayerCard(BuildContext context, PlayerProfileModel player) {
+    final favoriteProvider = Provider.of<FavoriteProvider>(
+      context,
+      listen: false,
+    );
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PlayerDetailsScreen(player: player),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xff161b22),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: const Color(0xff0d1117),
+                borderRadius: BorderRadius.circular(14),
               ),
+              child:
+                  player.photo.isEmpty
+                      ? const Icon(
+                        Icons.person_rounded,
+                        color: Colors.greenAccent,
+                      )
+                      : CachedNetworkImage(
+                        imageUrl: player.photo,
+                        fit: BoxFit.cover,
+                        errorWidget:
+                            (_, __, ___) => const Icon(
+                              Icons.person_rounded,
+                              color: Colors.greenAccent,
+                            ),
+                      ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    player.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    [
+                      player.nationality,
+                      player.position,
+                    ].where((value) => value.isNotEmpty).join(' - '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () => favoriteProvider.removeFavoritePlayer(player.id),
+              icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
             ),
           ],
         ),

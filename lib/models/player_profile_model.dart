@@ -51,6 +51,27 @@ class PlayerProfileModel {
       photo: player['photo'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'firstname': firstName,
+      'lastname': lastName,
+      'age': age,
+      'birth': {
+        'date': birthDate,
+        'place': birthPlace,
+        'country': birthCountry,
+      },
+      'nationality': nationality,
+      'height': height,
+      'weight': weight,
+      'number': number,
+      'position': position,
+      'photo': photo,
+    };
+  }
 }
 
 class PlayerCareerSpan {

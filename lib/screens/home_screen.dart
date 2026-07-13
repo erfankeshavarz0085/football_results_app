@@ -127,7 +127,8 @@ class _HomeContentState extends State<HomeContent> {
                   favoriteProvider.isLoaded &&
                   (favoriteProvider.favoriteTeams.isNotEmpty ||
                       favoriteProvider.favoriteLeagues.isNotEmpty ||
-                      favoriteProvider.followedMatches.isNotEmpty)) ...[
+                      favoriteProvider.followedMatches.isNotEmpty ||
+                      favoriteProvider.favoritePlayers.isNotEmpty)) ...[
                 const SizedBox(height: 16),
                 _favoritesPreview(favoriteProvider),
               ],
@@ -419,6 +420,7 @@ class _HomeContentState extends State<HomeContent> {
     final teamCount = favoriteProvider.favoriteTeams.length;
     final leagueCount = favoriteProvider.favoriteLeagues.length;
     final matchCount = favoriteProvider.followedMatches.length;
+    final playerCount = favoriteProvider.favoritePlayers.length;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -433,7 +435,7 @@ class _HomeContentState extends State<HomeContent> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '$teamCount teams - $leagueCount leagues - $matchCount matches saved',
+              '$teamCount teams - $leagueCount leagues - $playerCount players - $matchCount matches saved',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Colors.white70, fontSize: 13),

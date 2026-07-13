@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/player_profile_model.dart';
+import '../providers/favorite_provider.dart';
 import '../services/api_service.dart';
 import '../utils/error_messages.dart';
 import '../widgets/empty_state_card.dart';
@@ -35,9 +37,25 @@ class _PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final favorites = Provider.of<FavoriteProvider>(context);
+    final isFavorite = favorites.isFavoritePlayer(widget.player.id);
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
-      appBar: AppBar(title: const Text('Player Details')),
+      appBar: AppBar(
+        title: const Text('Player Details'),
+        actions: [
+          IconButton(
+            tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+            onPressed: () => favorites.toggleFavoritePlayer(widget.player),
+            icon: Icon(
+              isFavorite
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
+              color: isFavorite ? Colors.redAccent : Colors.white,
+            ),
+          ),
+        ],
+      ),
       body: FutureBuilder<PlayerDetailsModel?>(
         future: _detailsFuture,
         builder: (context, snapshot) {
