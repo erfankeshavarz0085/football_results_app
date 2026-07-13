@@ -53,3 +53,4 @@ flutter:
 
   assets:
     - .env
+    - assets/branding/shootball-logo.png

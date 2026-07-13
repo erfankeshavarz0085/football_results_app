@@ -39,12 +39,7 @@ class FavoriteTeamModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'logo': logo,
-      'country': country,
-    };
+    return {'id': id, 'name': name, 'logo': logo, 'country': country};
   }
 }
 
@@ -58,7 +53,8 @@ class FavoriteProvider extends ChangeNotifier {
   final List<FollowedMatchModel> _followedMatches = [];
   bool _isLoaded = false;
 
-  List<FavoriteTeamModel> get favoriteTeams => List.unmodifiable(_favoriteTeams);
+  List<FavoriteTeamModel> get favoriteTeams =>
+      List.unmodifiable(_favoriteTeams);
   List<LeagueModel> get favoriteLeagues => List.unmodifiable(_favoriteLeagues);
   List<FollowedMatchModel> get followedMatches {
     return List.unmodifiable(_followedMatches);
@@ -73,32 +69,23 @@ class FavoriteProvider extends ChangeNotifier {
   Future<void> loadFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     final rawTeams = prefs.getStringList(_teamsKey) ?? [];
-    final leagueIds = prefs.getStringList(_leaguesKey) ?? [];
+    final rawLeagues = prefs.getStringList(_leaguesKey) ?? [];
     final rawMatches = prefs.getStringList(_matchesKey) ?? [];
 
     _favoriteTeams
       ..clear()
       ..addAll(
-        rawTeams
-            .map(_decodeFavoriteTeam)
-            .whereType<FavoriteTeamModel>(),
+        rawTeams.map(_decodeFavoriteTeam).whereType<FavoriteTeamModel>(),
       );
 
     _favoriteLeagues
       ..clear()
-      ..addAll(
-        leagueIds
-            .map(int.tryParse)
-            .whereType<int>()
-            .map((id) => LeagueCatalog.byId(id, 'League $id')),
-      );
+      ..addAll(rawLeagues.map(_decodeFavoriteLeague).whereType<LeagueModel>());
 
     _followedMatches
       ..clear()
       ..addAll(
-        rawMatches
-            .map(_decodeFollowedMatch)
-            .whereType<FollowedMatchModel>(),
+        rawMatches.map(_decodeFollowedMatch).whereType<FollowedMatchModel>(),
       );
 
     _isLoaded = true;
@@ -109,6 +96,32 @@ class FavoriteProvider extends ChangeNotifier {
     try {
       return FavoriteTeamModel.fromJson(
         jsonDecode(rawTeam) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  LeagueModel? _decodeFavoriteLeague(String rawLeague) {
+    try {
+      if (!rawLeague.trimLeft().startsWith('{')) {
+        final id = int.tryParse(rawLeague);
+        return id == null ? null : LeagueCatalog.byId(id, 'League $id');
+      }
+      final json = jsonDecode(rawLeague) as Map<String, dynamic>;
+      final season = json['apiSeason'] as int? ?? 0;
+      return LeagueModel(
+        id: json['id'] ?? 0,
+        name: json['name'] ?? 'Unknown league',
+        country: json['country'] ?? 'Unknown',
+        season: json['season'] ?? season.toString(),
+        apiSeason: season,
+        logoUrl: json['logoUrl'] ?? '',
+        availableSeasons:
+            (json['availableSeasons'] as List? ?? const [])
+                .whereType<int>()
+                .toList(),
+        fallbackIcon: Icons.emoji_events_rounded,
       );
     } catch (_) {
       return null;
@@ -207,9 +220,10 @@ class FavoriteProvider extends ChangeNotifier {
   Future<void> _saveFavorites() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final rawTeams = _favoriteTeams.map((team) {
-      return jsonEncode(team.toJson());
-    }).toList();
+    final rawTeams =
+        _favoriteTeams.map((team) {
+          return jsonEncode(team.toJson());
+        }).toList();
 
     await prefs.setStringList(_teamsKey, rawTeams);
   }
@@ -217,19 +231,29 @@ class FavoriteProvider extends ChangeNotifier {
   Future<void> _saveFavoriteLeagues() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final leagueIds = _favoriteLeagues.map((league) {
-      return league.id.toString();
-    }).toList();
+    final leagues =
+        _favoriteLeagues.map((league) {
+          return jsonEncode({
+            'id': league.id,
+            'name': league.name,
+            'country': league.country,
+            'season': league.season,
+            'apiSeason': league.apiSeason,
+            'logoUrl': league.logoUrl,
+            'availableSeasons': league.availableSeasons,
+          });
+        }).toList();
 
-    await prefs.setStringList(_leaguesKey, leagueIds);
+    await prefs.setStringList(_leaguesKey, leagues);
   }
 
   Future<void> _saveFollowedMatches() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final rawMatches = _followedMatches.map((match) {
-      return jsonEncode(match.toJson());
-    }).toList();
+    final rawMatches =
+        _followedMatches.map((match) {
+          return jsonEncode(match.toJson());
+        }).toList();
 
     await prefs.setStringList(_matchesKey, rawMatches);
   }

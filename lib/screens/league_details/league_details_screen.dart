@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import 'tabs/fixtures_tab.dart';
 import 'tabs/history_tab.dart';
 import 'tabs/overview_tab.dart';
+import 'tabs/player_stats_tab.dart';
 import 'tabs/standings_tab.dart';
 
 class LeagueDetailsScreen extends StatefulWidget {
@@ -77,7 +78,7 @@ class _LeagueDetailsScreenState extends State<LeagueDetailsScreen> {
     }
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         backgroundColor: const Color(0xff0d1117),
         body: SafeArea(
@@ -92,6 +93,7 @@ class _LeagueDetailsScreenState extends State<LeagueDetailsScreen> {
                   Tab(text: 'Overview'),
                   Tab(text: 'Fixtures'),
                   Tab(text: 'Standings'),
+                  Tab(text: 'Players'),
                   Tab(text: 'History'),
                 ],
               ),
@@ -113,6 +115,13 @@ class _LeagueDetailsScreenState extends State<LeagueDetailsScreen> {
                       ),
                       leagueId: widget.leagueId,
                       leagueName: widget.leagueName,
+                      season: _selectedSeason,
+                    ),
+                    PlayerStatsTab(
+                      key: ValueKey(
+                        'players-${widget.leagueId}-$_selectedSeason',
+                      ),
+                      leagueId: widget.leagueId,
                       season: _selectedSeason,
                     ),
                     HistoryTab(

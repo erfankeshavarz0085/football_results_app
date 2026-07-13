@@ -20,15 +20,10 @@ class LiveScreen extends StatefulWidget {
 }
 
 class _LiveScreenState extends State<LiveScreen> {
-  final List<int> importantLeagueIds = const [
-    39,
-    140,
-    135,
-    78,
-    61,
-    2,
-    1,
-  ];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  final List<int> importantLeagueIds = const [39, 140, 135, 78, 61, 2, 1];
 
   @override
   void initState() {
@@ -42,6 +37,7 @@ class _LiveScreenState extends State<LiveScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<FixtureProvider>(context);
+    final fixtures = _filterFixtures(provider.liveFixtures);
 
     return Scaffold(
       backgroundColor: const Color(0xff0d1117),
@@ -60,19 +56,21 @@ class _LiveScreenState extends State<LiveScreen> {
                 const SizedBox(height: 12),
                 _demoBanner(),
               ],
+              const SizedBox(height: 16),
+              _searchBox(),
               const SizedBox(height: 22),
               _sectionHeader(),
               const SizedBox(height: 12),
               if (provider.isLoading)
-                const FixtureSkeletonList(
-                  accentColor: Colors.redAccent,
-                )
+                const FixtureSkeletonList(accentColor: Colors.redAccent)
               else if (provider.errorMessage != null)
                 _messageBox(provider.errorMessage!)
               else if (provider.liveFixtures.isEmpty)
                 _messageBox('No live matches right now')
+              else if (fixtures.isEmpty)
+                _messageBox('No live matches match your search')
               else
-                ..._buildLeagueCards(provider.liveFixtures),
+                ..._buildLeagueCards(fixtures),
             ],
           ),
         ),
@@ -80,18 +78,52 @@ class _LiveScreenState extends State<LiveScreen> {
     );
   }
 
-  Widget _topHeader({
-    required int liveCount,
-    required VoidCallback onRefresh,
-  }) {
+  List<FixtureModel> _filterFixtures(List<FixtureModel> fixtures) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return fixtures;
+    return fixtures.where((fixture) {
+      return fixture.homeTeam.toLowerCase().contains(query) ||
+          fixture.awayTeam.toLowerCase().contains(query) ||
+          fixture.leagueName.toLowerCase().contains(query) ||
+          fixture.country.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  Widget _searchBox() {
+    return TextField(
+      controller: _searchController,
+      onChanged: (value) => setState(() => _searchQuery = value),
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: 'Search live teams or leagues...',
+        hintStyle: const TextStyle(color: Colors.grey),
+        prefixIcon: const Icon(Icons.search_rounded, color: Colors.redAccent),
+        suffixIcon:
+            _searchQuery.isEmpty
+                ? null
+                : IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                  icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                ),
+        filled: true,
+        fillColor: const Color(0xff161b22),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _topHeader({required int liveCount, required VoidCallback onRefresh}) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xff201313),
-            Color(0xff111827),
-          ],
+          colors: [Color(0xff201313), Color(0xff111827)],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
@@ -169,9 +201,10 @@ class _LiveScreenState extends State<LiveScreen> {
 
     final widgets = <Widget>[];
 
-    final orderedImportantIds = importantLeagueIds
-        .where((id) => importantGroups.containsKey(id))
-        .toList();
+    final orderedImportantIds =
+        importantLeagueIds
+            .where((id) => importantGroups.containsKey(id))
+            .toList();
 
     for (final leagueId in orderedImportantIds) {
       final matches = importantGroups[leagueId] ?? [];
@@ -269,19 +302,21 @@ class _LiveScreenState extends State<LiveScreen> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white10),
           ),
-          child: logo.isNotEmpty && !isOther
-              ? CachedNetworkImage(
-                  imageUrl: logo,
-                  fit: BoxFit.contain,
-                  errorWidget: (_, __, ___) => const Icon(
-                    Icons.emoji_events_rounded,
+          child:
+              logo.isNotEmpty && !isOther
+                  ? CachedNetworkImage(
+                    imageUrl: logo,
+                    fit: BoxFit.contain,
+                    errorWidget:
+                        (_, __, ___) => const Icon(
+                          Icons.emoji_events_rounded,
+                          color: Colors.greenAccent,
+                        ),
+                  )
+                  : Icon(
+                    isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
                     color: Colors.greenAccent,
                   ),
-                )
-              : Icon(
-                  isOther ? Icons.public_rounded : Icons.emoji_events_rounded,
-                  color: Colors.greenAccent,
-                ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -331,117 +366,119 @@ class _LiveScreenState extends State<LiveScreen> {
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xff0d1117),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        children: [
-          if (showCompetitionInfo) ...[
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xff0d1117),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          children: [
+            if (showCompetitionInfo) ...[
+              Row(
+                children: [
+                  const Icon(
+                    Icons.emoji_events_rounded,
+                    color: Colors.greenAccent,
+                    size: 15,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${_displayCountry(fixture)} - ${fixture.leagueName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed:
+                        () => favoriteProvider.toggleFollowedMatch(fixture),
+                    icon: Icon(
+                      isFollowed
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: isFollowed ? Colors.amber : Colors.grey,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
             Row(
               children: [
-                const Icon(
-                  Icons.emoji_events_rounded,
-                  color: Colors.greenAccent,
-                  size: 15,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    '${_displayCountry(fixture)} - ${fixture.leagueName}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
-                  icon: Icon(
-                    isFollowed
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    color: isFollowed ? Colors.amber : Colors.grey,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-          ],
-          Row(
-            children: [
-              Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Column(
-                  children: [
-                    Text(
-                      '$homeScore - $awayScore',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _formatLiveStatus(fixture.status),
+                Expanded(child: _teamMini(fixture.homeTeam, fixture.homeLogo)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    children: [
+                      Text(
+                        '$homeScore - $awayScore',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 11,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
-              if (!showCompetitionInfo)
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => favoriteProvider.toggleFollowedMatch(fixture),
-                  icon: Icon(
-                    isFollowed
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    color: isFollowed ? Colors.amber : Colors.grey,
-                    size: 20,
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _formatLiveStatus(fixture.status),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-          if (fixture.round.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              _cleanRound(fixture.round),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey, fontSize: 11),
+                Expanded(child: _teamMini(fixture.awayTeam, fixture.awayLogo)),
+                if (!showCompetitionInfo)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed:
+                        () => favoriteProvider.toggleFollowedMatch(fixture),
+                    icon: Icon(
+                      isFollowed
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: isFollowed ? Colors.amber : Colors.grey,
+                      size: 20,
+                    ),
+                  ),
+              ],
             ),
+            if (fixture.round.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                _cleanRound(fixture.round),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+            ],
           ],
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -476,6 +513,12 @@ class _LiveScreenState extends State<LiveScreen> {
     );
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Widget _demoBanner() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -486,11 +529,7 @@ class _LiveScreenState extends State<LiveScreen> {
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.offline_bolt_rounded,
-            color: Colors.amberAccent,
-            size: 20,
-          ),
+          Icon(Icons.offline_bolt_rounded, color: Colors.amberAccent, size: 20),
           SizedBox(width: 10),
           Expanded(
             child: Text(

@@ -11,6 +11,7 @@ import '../models/team_model.dart';
 import '../utils/constants.dart';
 import '../utils/demo_football_data.dart';
 import '../models/match_detail_model.dart';
+import '../models/player_leader_model.dart';
 
 class ApiService {
   static const String _persistentCachePrefix = 'api_cache';
@@ -22,6 +23,8 @@ class ApiService {
   static final Map<String, _CacheItem<List<LeagueModel>>> _leagueSearchCache =
       {};
   static _CacheItem<List<LeagueModel>>? _currentLeaguesCache;
+  static final Map<String, _CacheItem<LeaguePlayerLeaders>>
+  _playerLeadersCache = {};
   static final Map<String, Future<http.Response>> _inFlightRequests = {};
   static DateTime? _lastRequestAt;
   static Future<void> _requestQueue = Future.value();
@@ -736,6 +739,171 @@ class ApiService {
     return champions;
   }
 
+  Future<LeaguePlayerLeaders> getLeaguePlayerLeaders(
+    int leagueId,
+    int season,
+  ) async {
+    final cacheKey = 'v2-$leagueId-$season';
+    final cached = _playerLeadersCache[cacheKey];
+    if (cached != null && !cached.isExpired(const Duration(hours: 6))) {
+      return cached.data;
+    }
+
+    final responses = await Future.wait([
+      _fetchResponseList(
+        Uri.parse(
+          '${AppConstants.baseUrl}/players/topscorers?league=$leagueId&season=$season',
+        ),
+      ),
+      _fetchResponseList(
+        Uri.parse(
+          '${AppConstants.baseUrl}/players/topassists?league=$leagueId&season=$season',
+        ),
+      ),
+      getLeagueFixtures(leagueId, season: season),
+    ]);
+
+    final scorers = _parsePlayerLeaders(
+      responses[0],
+      (stats) => stats['goals']?['total'] ?? 0,
+    );
+    final assists = _parsePlayerLeaders(
+      responses[1],
+      (stats) => stats['goals']?['assists'] ?? 0,
+    );
+    final cleanSheets = await _buildCleanSheetLeaders(
+      responses[2] as List<FixtureModel>,
+      leagueId,
+      season,
+    );
+
+    final result = LeaguePlayerLeaders(
+      scorers: scorers,
+      assists: assists,
+      cleanSheets: cleanSheets,
+    );
+    _playerLeadersCache[cacheKey] = _CacheItem(data: result);
+    return result;
+  }
+
+  List<PlayerLeaderModel> _parsePlayerLeaders(
+    List<dynamic> response,
+    int Function(dynamic stats) valueOf,
+  ) {
+    return response
+        .map((item) {
+          final player = item['player'] ?? {};
+          final List statistics = item['statistics'] ?? [];
+          final stats = statistics.isEmpty ? {} : statistics.first;
+          final team = stats['team'] ?? {};
+          return PlayerLeaderModel(
+            playerId: player['id'] ?? 0,
+            playerName: player['name'] ?? 'Unknown player',
+            playerPhoto: player['photo'] ?? '',
+            teamId: team['id'] ?? 0,
+            teamName: team['name'] ?? 'Unknown team',
+            teamLogo: team['logo'] ?? '',
+            value: valueOf(stats),
+          );
+        })
+        .where((item) => item.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+  }
+
+  Future<List<PlayerLeaderModel>> _buildCleanSheetLeaders(
+    List<FixtureModel> fixtures,
+    int leagueId,
+    int season,
+  ) async {
+    final teams = <int, _TeamCleanSheets>{};
+    for (final fixture in fixtures) {
+      if (fixture.homeScore == null || fixture.awayScore == null) continue;
+      teams.putIfAbsent(
+        fixture.homeTeamId,
+        () => _TeamCleanSheets(
+          id: fixture.homeTeamId,
+          name: fixture.homeTeam,
+          logo: fixture.homeLogo,
+        ),
+      );
+      teams.putIfAbsent(
+        fixture.awayTeamId,
+        () => _TeamCleanSheets(
+          id: fixture.awayTeamId,
+          name: fixture.awayTeam,
+          logo: fixture.awayLogo,
+        ),
+      );
+      if (fixture.awayScore == 0) teams[fixture.homeTeamId]!.count++;
+      if (fixture.homeScore == 0) teams[fixture.awayTeamId]!.count++;
+    }
+
+    final ranked =
+        teams.values.where((team) => team.count > 0).toList()
+          ..sort((a, b) => b.count.compareTo(a.count));
+    final leaders = <PlayerLeaderModel>[];
+    for (final team in ranked.take(10)) {
+      final players = await _fetchPaginatedResponse(
+        Uri.parse(
+          '${AppConstants.baseUrl}/players?team=${team.id}&league=$leagueId&season=$season',
+        ),
+      );
+      dynamic bestGoalkeeper;
+      var bestAppearances = -1;
+      for (final item in players) {
+        final List statistics = item['statistics'] ?? [];
+        for (final stats in statistics) {
+          if (stats['team']?['id'] != team.id ||
+              stats['league']?['id'] != leagueId ||
+              stats['games']?['position'] != 'Goalkeeper') {
+            continue;
+          }
+          final appearances = stats['games']?['appearences'] ?? 0;
+          if (appearances > bestAppearances) {
+            bestAppearances = appearances;
+            bestGoalkeeper = item['player'];
+          }
+        }
+      }
+      leaders.add(
+        PlayerLeaderModel(
+          playerId: bestGoalkeeper?['id'] ?? 0,
+          playerName: bestGoalkeeper?['name'] ?? '${team.name} goalkeeper',
+          playerPhoto: bestGoalkeeper?['photo'] ?? '',
+          teamId: team.id,
+          teamName: team.name,
+          teamLogo: team.logo,
+          value: team.count,
+        ),
+      );
+    }
+    return leaders;
+  }
+
+  Future<List<dynamic>> _fetchPaginatedResponse(Uri baseUrl) async {
+    final allItems = <dynamic>[];
+    var page = 1;
+    var totalPages = 1;
+
+    do {
+      final url = baseUrl.replace(
+        queryParameters: {...baseUrl.queryParameters, 'page': page.toString()},
+      );
+      final response = await _getWithRetry(url);
+      if (response.statusCode != 200) {
+        throw Exception('API Error: ${response.statusCode}');
+      }
+      final data = jsonDecode(response.body);
+      _throwIfApiErrors(data['errors']);
+      allItems.addAll(data['response'] ?? const []);
+      totalPages = data['paging']?['total'] ?? 1;
+      page++;
+    } while (page <= totalPages);
+
+    return allItems;
+  }
+
   LeagueModel _leagueFromJson(dynamic json) {
     final league = json['league'] ?? {};
     final country = json['country'] ?? {};
@@ -988,6 +1156,15 @@ class ApiUsage {
     required this.minuteRemaining,
     required this.updatedAt,
   });
+}
+
+class _TeamCleanSheets {
+  final int id;
+  final String name;
+  final String logo;
+  int count = 0;
+
+  _TeamCleanSheets({required this.id, required this.name, required this.logo});
 }
 
 class _CacheItem<T> {

@@ -60,21 +60,14 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xff132015),
-              Color(0xff0d1117),
-              Color(0xff070a0f),
-            ],
+            colors: [Color(0xff132015), Color(0xff0d1117), Color(0xff070a0f)],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
               const Spacer(),
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: _brandMark(),
-              ),
+              ScaleTransition(scale: _scaleAnimation, child: _brandMark()),
               const SizedBox(height: 26),
               const Text(
                 'Shoot Ball',
@@ -109,10 +102,7 @@ class _SplashScreenState extends State<SplashScreen>
                 padding: EdgeInsets.only(bottom: 24),
                 child: Text(
                   'Powered by football data',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ),
             ],
@@ -124,32 +114,26 @@ class _SplashScreenState extends State<SplashScreen>
 
   Widget _brandMark() {
     return Container(
-      width: 104,
-      height: 104,
+      width: 112,
+      height: 112,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.greenAccent,
-        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white24),
         boxShadow: [
           BoxShadow(
-            color: Colors.greenAccent.withValues(alpha: 0.24),
+            color: const Color(0xff1769ff).withValues(alpha: 0.28),
             blurRadius: 34,
             spreadRadius: 6,
           ),
         ],
       ),
-      child: Container(
-        margin: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: const Color(0xff0d1117),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.12),
-          ),
-        ),
-        child: const Icon(
-          Icons.sports_soccer_rounded,
-          color: Colors.greenAccent,
-          size: 52,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(23),
+        child: Image.asset(
+          'assets/branding/shootball-logo.png',
+          fit: BoxFit.cover,
         ),
       ),
     );

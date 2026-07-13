@@ -199,10 +199,14 @@ class _HomeContentState extends State<HomeContent> {
       ),
       child: Row(
         children: [
-          const CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.greenAccent,
-            child: Icon(Icons.sports_soccer, color: Colors.black, size: 32),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(
+              'assets/branding/shootball-logo.png',
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(

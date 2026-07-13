@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/league_model.dart';
+import '../providers/favorite_provider.dart';
 import '../providers/team_provider.dart';
 import 'league_details/league_details_screen.dart';
 
@@ -201,6 +202,8 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
   }
 
   Widget _leagueCard(BuildContext context, LeagueModel league) {
+    final favorites = Provider.of<FavoriteProvider>(context);
+    final isFavorite = favorites.isFavoriteLeague(league.id);
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -250,16 +253,12 @@ class _LeaguesScreenState extends State<LeaguesScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Favorites will be added in the next step'),
-                  ),
-                );
-              },
-              icon: const Icon(
-                Icons.favorite_border_rounded,
-                color: Colors.grey,
+              onPressed: () => favorites.toggleFavoriteLeague(league),
+              icon: Icon(
+                isFavorite
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                color: isFavorite ? Colors.redAccent : Colors.grey,
               ),
             ),
             const Icon(
