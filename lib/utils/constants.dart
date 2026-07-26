@@ -25,7 +25,7 @@ class AppConstants {
   }
 
   static bool get demoFallbackEnabled {
-    return (dotenv.env['API_DEMO_FALLBACK_ENABLED'] ?? 'false').toLowerCase() ==
+    return (dotenv.env['API_DEMO_FALLBACK_ENABLED'] ?? 'true').toLowerCase() ==
         'true';
   }
 

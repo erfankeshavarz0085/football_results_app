@@ -74,7 +74,7 @@ class FootballApp extends StatelessWidget {
 
         debugShowCheckedModeBanner: false,
 
-        title: "Football Results",
+        title: "ShootBall",
 
 
         theme: AppTheme.darkTheme,

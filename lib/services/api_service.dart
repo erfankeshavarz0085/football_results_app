@@ -961,23 +961,42 @@ class ApiService {
       return cached.data;
     }
 
-    final url = Uri.parse('${AppConstants.baseUrl}/leagues?current=true');
-    final response = await _fetchResponseList(url);
-    final leagues =
-        response.map(_leagueFromJson).where((league) => league.id != 0).toList()
-          ..sort((a, b) {
-            final country = a.country.compareTo(b.country);
-            return country != 0 ? country : a.name.compareTo(b.name);
-          });
-    _currentLeaguesCache = _CacheItem(data: leagues);
-    return leagues;
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/leagues?current=true');
+      final response = await _fetchResponseList(url);
+      final leagues =
+          response
+              .map(_leagueFromJson)
+              .where((league) => league.id != 0)
+              .toList()
+            ..sort((a, b) {
+              final country = a.country.compareTo(b.country);
+              return country != 0 ? country : a.name.compareTo(b.name);
+            });
+      _currentLeaguesCache = _CacheItem(data: leagues);
+      return leagues;
+    } catch (e) {
+      if (await _isDemoFallbackEnabled()) {
+        debugPrint('DEMO CURRENT LEAGUES FALLBACK: $e');
+        return LeagueCatalog.topLeagues;
+      }
+      rethrow;
+    }
   }
 
   Future<LeagueModel?> getLeague(int leagueId) async {
-    final url = Uri.parse('${AppConstants.baseUrl}/leagues?id=$leagueId');
-    final response = await _fetchResponseList(url);
-    if (response.isEmpty) return null;
-    return _leagueFromJson(response.first);
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/leagues?id=$leagueId');
+      final response = await _fetchResponseList(url);
+      if (response.isEmpty) return null;
+      return _leagueFromJson(response.first);
+    } catch (e) {
+      if (await _isDemoFallbackEnabled()) {
+        debugPrint('DEMO LEAGUE FALLBACK: $leagueId');
+        return LeagueCatalog.byId(leagueId, 'League $leagueId');
+      }
+      rethrow;
+    }
   }
 
   Future<List<LeagueChampionModel>> getLeagueChampions(
