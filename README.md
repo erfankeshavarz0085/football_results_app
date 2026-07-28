@@ -1,131 +1,111 @@
 # Shoot Ball
 
-Shoot Ball is a Flutter football results application inspired by modern match
-centers such as SofaScore and FotMob. It uses Provider for state management,
-API-Football for live football data, local persistence for user preferences, and
-a dark, modern interface.
+Shoot Ball is a Flutter football-results app inspired by modern match centres such as SofaScore and FotMob. It presents live and scheduled fixtures, competition data, teams, players, and match details through a dark, football-focused interface.
+
+For Persian documentation, see [README_FA.md](README_FA.md).
 
 ## Features
 
-- Splash screen with custom app entry
-- Dark football-focused UI
-- Home screen with date selector and grouped fixtures
-- Live matches grouped by important leagues
-- League list with famous competitions
-- Search for teams and leagues
-- League details with Overview, Fixtures, Standings, and History tabs
-- Filterable champions history for major leagues and the World Cup
-- Team details with Overview, Matches, Lineup, and Squad tabs
-- Match details with Summary, Stats, and Lineups tabs
-- Match events, statistics, lineups, venue, and referee details
-- Favorite teams, leagues, and followed matches
+- Home fixtures by date, league grouping, in-page filtering, and a calendar picker
+- Live-match view with loading, empty, and demo states
+- League discovery and league pages with season selection, fixtures, standings, player leaders, and champions history
+- Team pages with club information, recent matches, latest lineup, and squad
+- Match pages with summary, events, statistics, lineups, venue, referee, and team navigation
+- Search for teams, leagues, and players, including country filters, popular teams, and recent searches
+- Player pages with personal information, club career, honours, and favourite support
+- Persisted favourites for teams, leagues, players, and followed matches
 - Recently viewed teams, leagues, and matches
-- Settings for personalization and demo fallback
-- API safety features: request throttling, cache fallback, and demo fallback
-- Offline/demo data for presentation and API outage scenarios
-- Loading skeletons and improved empty/error states
+- Settings for home favourites, recently viewed search items, match-alert controls, and demo fallback
+- API request throttling, retries for transient failures, in-flight-request deduplication, memory/persistent cache, and stale-cache fallback
+- Optional demo data for offline demonstrations and API outage scenarios
 
 ## Tech Stack
 
-- Flutter
-- Dart
+- Flutter and Dart
 - Provider
-- API-Football via API-Sports
-- `http`
-- `shared_preferences`
-- `cached_network_image`
-- `flutter_dotenv`
-- `intl`
+- API-Football (API-Sports)
+- `http`, `flutter_dotenv`, `shared_preferences`, `cached_network_image`, `intl`, and `flutter_spinkit`
 
 ## Project Structure
 
 ```text
 lib/
-  models/       Data models for fixtures, teams, leagues, standings, details
-  providers/    Provider state management classes
-  screens/      App pages and tab screens
-  services/     API service and cache/fallback logic
-  utils/        Constants, demo data, league history/profile data, error text
-  widgets/      Shared UI widgets
+  models/       API and view data models
+  providers/    Application state and local persistence
+  screens/      Application pages and league-detail tabs
+  services/     API client, retrying, caching, and fallback logic
+  utils/        Configuration, demo data, and shared helpers
+  widgets/      Reusable UI components
 ```
 
-## Environment Setup
+## Setup
 
-Create a `.env` file in the project root. Use `.env.example` as the template:
+1. Install Flutter SDK compatible with Dart `^3.7.0`.
+2. Install packages:
 
-```env
-API_KEY=your_api_football_key_here
-API_ENABLED=true
-API_DEMO_FALLBACK_ENABLED=false
-API_REQUEST_INTERVAL_MS=250
-API_DEFAULT_SEASON=
-API_DEMO_FIXTURE_DATE=2024-07-14
-```
+   ```bash
+   flutter pub get
+   ```
 
-Important:
+3. Copy `.env.example` to `.env` and set the values you need:
 
-- Keep `.env` private and do not commit real API keys.
-- Set `API_ENABLED=false` when you want to avoid real API requests.
-- Keep `API_DEMO_FALLBACK_ENABLED=false` in production. Enable it only for
-  explicit offline presentation testing.
+   ```env
+   API_KEY=your_api_football_key_here
+   API_ENABLED=false
+   API_DEMO_FALLBACK_ENABLED=true
+   API_REQUEST_INTERVAL_MS=250
+   API_DEFAULT_SEASON=
+   API_DEMO_FIXTURE_DATE=2024-07-14
+   ```
 
-## Running The App
+`.env` contains secrets and is intentionally ignored by Git. Do not commit an API key.
 
-Install dependencies:
+## Configuration
 
-```bash
-flutter pub get
-```
+| Variable | Purpose |
+| --- | --- |
+| `API_KEY` | API-Football key; required only when real requests are enabled. |
+| `API_ENABLED` | Enables/disables real API requests. |
+| `API_DEMO_FALLBACK_ENABLED` | Makes demo fallback available; the in-app switch controls whether it is used. |
+| `API_REQUEST_INTERVAL_MS` | Minimum delay between API requests; `250` ms is the default. |
+| `API_DEFAULT_SEASON` | Optional season start year; empty uses automatic July rollover. |
+| `API_DEMO_FIXTURE_DATE` | Optional date used by the demo-fixture data. |
 
-Run on Chrome:
+For an offline demo, use `API_ENABLED=false` and `API_DEMO_FALLBACK_ENABLED=true`, then enable **Demo fallback** in Settings. For real data, set a valid key and `API_ENABLED=true`.
+
+## Run
 
 ```bash
 flutter run -d chrome
 ```
 
-Run on Windows desktop:
+Or select any configured Flutter device, for example Windows:
 
 ```bash
 flutter run -d windows
 ```
 
-## API And Demo Fallback
+## Data Behaviour
 
-Shoot Ball tries data sources in this order:
+For cached fixture and standings requests, the app uses data in this order:
 
 1. Fresh in-memory cache
-2. Persistent cache from `shared_preferences`
-3. Real API-Football request
-4. Stale cache fallback
-5. Demo fallback data, if enabled
+2. Fresh persistent cache (`shared_preferences`)
+3. API-Football request
+4. Stale memory or persistent cache when the request fails
+5. Demo data when fallback is enabled
 
-This helps the app remain usable when:
+Some API-Football endpoints, seasons, and historical data are limited by the selected API plan. Demo data is deliberately small and presentation-focused; it is not a replacement for production data.
 
-- The API key is missing
-- API requests are disabled
-- The API account is suspended
-- The free plan blocks a date or season
-- The network is unavailable
+## Verification
 
-Demo fallback can also be controlled from the Settings screen.
+Run static analysis:
 
-## Main Screens
+```bash
+flutter analyze
+```
 
-- Home: today's fixtures, custom date picker, search within fixtures
-- Live: currently live matches, grouped by league
-- Leagues: famous leagues plus league details
-- Search: teams and leagues with country filters and recent items
-- Favorites: saved teams, leagues, and followed matches
-- Settings: personalization, API/demo status, demo fallback toggle
+Use the manual test checklists before release:
 
-## Notes
-
-- Some API-Football seasons and endpoints are restricted on free plans.
-- World Cup fixtures use the 2022 season because newer seasons may require a
-  paid API plan.
-- Demo data is intentionally small and presentation-focused. It is not intended
-  to replace real football data.
-
-## Testing
-
-Use [TEST_CHECKLIST.md](TEST_CHECKLIST.md) for the manual verification flow.
+- [English checklist](TEST_CHECKLIST.md)
+- [Persian checklist](TEST_CHECKLIST_FA.md)

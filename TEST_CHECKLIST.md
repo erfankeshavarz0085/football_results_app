@@ -1,125 +1,76 @@
-# Shoot Ball Test Checklist
+# Shoot Ball — Manual Test Checklist
 
-Use this checklist after major changes or before a GitHub release.
+Use this checklist after meaningful changes and before a release. Test both a real-API scenario and an offline/demo scenario where possible.
 
-## Environment
+## Environment and Startup
 
-- [ ] `.env` exists in the project root.
-- [ ] `API_KEY` is set when testing real API requests.
-- [ ] `API_ENABLED=true` loads real API data.
+- [ ] `.env` exists locally and is not tracked by Git.
+- [ ] A valid `API_KEY` is set when testing real requests.
+- [ ] `API_ENABLED=true` permits real API requests.
 - [ ] `API_ENABLED=false` prevents real API requests.
-- [ ] `API_DEMO_FALLBACK_ENABLED=true` allows demo fallback data.
+- [ ] `API_DEMO_FALLBACK_ENABLED=true` makes the in-app demo fallback option available.
+- [ ] The splash screen appears, then opens Home without a crash.
+- [ ] All five bottom-navigation destinations work: Home, Leagues, Live, Search, and Favorites.
 
-## App Startup
+## Home and Live
 
-- [ ] Splash screen appears.
-- [ ] Splash screen stays visible for the expected duration.
-- [ ] App opens to Home after splash.
-- [ ] Bottom navigation is visible and usable.
-
-## Home
-
-- [ ] Today's fixtures load for the current date.
-- [ ] Previous day button changes the fixture date.
-- [ ] Next day button changes the fixture date.
-- [ ] Calendar picker opens and selects a date.
-- [ ] Fixtures are grouped by league.
-- [ ] Match cards open Match Details.
-- [ ] Fixture search filters by team, league, or country.
-- [ ] Empty state appears when no fixtures match.
-- [ ] Loading skeleton appears while fixtures are loading.
-- [ ] Demo banner appears when demo fallback data is shown.
-
-## Live
-
-- [ ] Live screen loads without crashing.
-- [ ] Live matches are grouped by league.
-- [ ] Match cards open Match Details.
-- [ ] Empty state appears when no live matches are available.
-- [ ] Loading skeleton appears while live fixtures are loading.
-- [ ] Demo banner appears when demo live data is shown.
+- [ ] Home loads fixtures for the selected date and groups them by league.
+- [ ] Previous/next-day controls and calendar selection change the fixture date.
+- [ ] Home filtering matches team, league, or country names.
+- [ ] Opening a fixture opens Match Details and saves it to Recently Viewed.
+- [ ] Loading, empty, error, and demo states are understandable and usable.
+- [ ] Live opens without crashing, groups matches by league, and opens Match Details.
+- [ ] The demo banner appears when demo data is being shown.
 
 ## Leagues
 
-- [ ] Famous leagues are shown in the Leagues screen.
-- [ ] League logos load correctly.
-- [ ] League search filters the famous league list.
-- [ ] Opening a league shows the details screen.
+- [ ] Famous-league list, logos, and league search work.
+- [ ] A league opens with its correct name, logo, country, and favourite control.
+- [ ] Changing the season updates league tabs that use season data.
+- [ ] Overview displays competition information.
+- [ ] Fixtures load, round selection works, and fixture cards open Match Details.
+- [ ] Standings load and a team row opens Team Details.
+- [ ] Player leaders load for Goals, Assists, and Clean sheets; retry/empty states work.
+- [ ] History displays champions and the season filter works.
+- [ ] World Cup fixtures use the supported 2022 data path.
 
-## League Details
+## Matches and Teams
 
-- [ ] Overview tab shows league profile data.
-- [ ] Overview shows latest champion and history count.
-- [ ] Fixtures tab loads fixtures or fallback/demo data.
-- [ ] Round selector works.
-- [ ] Fixture cards open Match Details.
-- [ ] Standings tab loads table data or fallback/demo data.
-- [ ] Standings team rows open Team Details.
-- [ ] History tab lists previous champions.
-- [ ] History season selector filters to the selected season.
-- [ ] World Cup uses 2022 fixtures.
+- [ ] Match Summary shows available venue, referee, events, and lineup information.
+- [ ] Events are ordered by minute.
+- [ ] Stats show both teams when the API provides statistics.
+- [ ] Lineups show formations, coaches, starting XI, and substitutes when available.
+- [ ] Team logos in Match Details open the corresponding Team Details page.
+- [ ] Team pages show header details, recent form/info, matches, lineup, and squad when data is available.
+- [ ] A recent team match opens Match Details.
+- [ ] Missing API data produces a clear empty/error state rather than a crash.
 
-## Match Details
+## Search and Players
 
-- [ ] Summary tab shows venue, referee, events count, and lineup count.
-- [ ] Events are sorted by minute.
-- [ ] Stats tab shows both teams when statistics are available.
-- [ ] Lineups tab shows formations, coach, starting XI, and substitutes when available.
-- [ ] Team logos in the score card open Team Details.
-- [ ] Empty states appear when events, stats, or lineups are missing.
-- [ ] Demo match details open for demo fixtures.
+- [ ] Search starts in Teams mode and shows popular teams before a three-character query.
+- [ ] Team, League, and Player modes search after three or more characters.
+- [ ] Country filter chips appear when applicable and filter the active result type.
+- [ ] Recent searches are saved, reusable, and clearable.
+- [ ] Recently Viewed items appear only when enabled in Settings.
+- [ ] Selecting a player opens Player Details.
+- [ ] Player Details shows available profile data, career history, and honours.
+- [ ] Player error, not-found, and retry states work.
 
-## Team Details
+## Favourites and Settings
 
-- [ ] Team header shows logo, name, country, and favorite button.
-- [ ] Overview tab shows recent form, club info, venue, capacity, and coach.
-- [ ] Matches tab shows recent matches.
-- [ ] Recent match rows open Match Details.
-- [ ] Lineup tab shows latest formation and players.
-- [ ] Squad tab shows player list.
-- [ ] Demo team details open when API is unavailable and fallback is enabled.
+- [ ] Teams, leagues, players, and matches can be added to and removed from favourites.
+- [ ] Favorites filters correctly show All, Matches, Leagues, Teams, and Players.
+- [ ] Saved favourites persist after restarting the app.
+- [ ] Home favourites summary respects its Settings switch.
+- [ ] Recently Viewed visibility respects its Settings switch.
+- [ ] Match-alert controls visibility respects its Settings switch.
+- [ ] The Demo fallback switch persists after restarting the app.
 
-## Search
+## Resilience and Release Checks
 
-- [ ] Search defaults to Teams.
-- [ ] Popular teams are shown before typing 3 characters.
-- [ ] Typing 3 or more characters searches teams.
-- [ ] Switching to Leagues searches leagues.
-- [ ] Country filter chips appear when multiple countries exist.
-- [ ] Country filter limits visible results.
-- [ ] Recent searches are saved.
-- [ ] Recent searches can be cleared.
-- [ ] Recently viewed items are shown when enabled in Settings.
-- [ ] Search empty state appears for no results.
-
-## Favorites
-
-- [ ] Favorite teams can be added and removed.
-- [ ] Favorite leagues can be added and removed.
-- [ ] Followed matches can be added and removed.
-- [ ] Favorites screen opens saved items correctly.
-- [ ] Home favorites summary respects Settings.
-
-## Settings
-
-- [ ] Data source card shows Real API status.
-- [ ] Data source card shows Demo fallback status.
-- [ ] Demo fallback switch persists after app restart.
-- [ ] Favorites summary switch affects Home.
-- [ ] Recently viewed switch affects Search.
-- [ ] Match alert controls switch affects match cards.
-
-## Demo And Offline
-
-- [ ] With `API_ENABLED=false` and Demo fallback on, Home shows demo fixtures.
-- [ ] With `API_ENABLED=false` and Demo fallback on, Live shows demo live matches.
-- [ ] With `API_ENABLED=false` and Demo fallback on, Search returns demo teams/leagues.
-- [ ] With `API_ENABLED=false` and Demo fallback off, app shows friendly errors/empty states.
-
-## Final Quality
-
-- [ ] No raw API exceptions are shown directly to users.
-- [ ] No API key is committed.
-- [ ] `flutter analyze` is clean or remaining warnings are documented.
-- [ ] UI works on Chrome.
-- [ ] UI works on the target mobile/desktop device.
+- [ ] With real API disabled and demo fallback enabled, Home, Live, Search, league, team, and match flows remain usable with demo data where supported.
+- [ ] With both real API and demo fallback disabled, the app shows friendly errors/empty states.
+- [ ] Restarting the app preserves settings, favourites, followed matches, and recently viewed items.
+- [ ] No raw exception or API key is visible to users or committed to Git.
+- [ ] `flutter analyze` passes, or any remaining diagnostics are documented.
+- [ ] The app is smoke-tested on Chrome and the intended target device(s).
