@@ -5,8 +5,6 @@ Shoot Ball یک اپلیکیشن Flutter برای نمایش نتایج فوتب
 برای مستندات انگلیسی، [README.md](README.md) را ببینید.
 ## طراحی رابط کاربری
 
-این پروژه ابتدا در Figma طراحی شده و سپس بر اساس همان طراحی در Flutter پیاده‌سازی شده است.
-
 🔗 لینک طراحی:
 https://www.figma.com/design/4wGBf3ozPExXwgJFJJz3ZG/Untitled?node-id=0-1&t=sNHjZJCdEYdvbmyn-1
 ## قابلیت‌ها
