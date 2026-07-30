@@ -4,6 +4,11 @@ Shoot Ball is a Flutter football-results app inspired by modern match centres su
 
 For Persian documentation, see [README_FA.md](README_FA.md).
 
+## UI/UX Design
+
+The user interface of this application was designed in Figma.
+
+🔗 [View the Figma Design](https://www.figma.com/design/4wGBf3ozPExXwgJFJJz3ZG/Untitled?node-id=0-1&t=sNHjZJCdEYdvbmyn-1)
 ## Features
 
 - Home fixtures by date, league grouping, in-page filtering, and a calendar picker
